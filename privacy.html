@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>隱私權政策 - CS-AI-CRM</title>
+  <style>
+    :root {
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', 'Noto Sans TC', sans-serif;
+      --color-bg: #f5f5f5;
+      --color-card: #ffffff;
+      --color-primary: #00a884;
+      --color-text: #333333;
+      --color-muted: #888888;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg);
+      color: var(--color-text);
+      padding: 24px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--color-card);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 32px 32px 24px;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: var(--color-primary);
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--color-muted);
+      margin-bottom: 24px;
+    }
+    h2 {
+      font-size: 20px;
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+    p {
+      line-height: 1.7;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    ul {
+      margin-left: 20px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    li {
+      margin-bottom: 6px;
+      line-height: 1.6;
+    }
+    .footer {
+      margin-top: 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-close {
+      padding: 8px 18px;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      background: var(--color-primary);
+      color: #fff;
+      font-size: 14px;
+    }
+    .btn-close:hover {
+      opacity: 0.9;
+    }
+    .zoom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--color-card);
+      border-bottom: 1px solid #eee;
+      margin: -32px -32px 24px -32px;
+      padding: 8px 32px 8px 16px;
+    }
+    .zoom-bar button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: var(--color-text);
+    }
+    .zoom-bar button.zoom-reset {
+      width: auto;
+      min-width: 48px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+    .zoom-bar button:hover {
+      background: #f5f5f5;
+    }
+    .zoom-bar .zoom-value {
+      min-width: 44px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--color-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="zoom-bar">
+    <button type="button" id="zoom-out" title="縮小">−</button>
+    <span class="zoom-value" id="zoom-value" aria-label="當前縮放比例">100%</span>
+    <button type="button" id="zoom-in" title="放大">+</button>
+    <button type="button" id="zoom-reset" class="zoom-reset" title="重置縮放" aria-label="重置縮放">重置</button>
+  </div>
+  <div class="container">
+    <h1>隱私權政策</h1>
+    <div class="subtitle">最後更新日期：2026 年 2 月 12 日</div>
+
+    <h2>一、適用範圍</h2>
+    <p>本隱私權政策適用於您使用 CS-AI-CRM（以下簡稱「本應用」）時，我們如何在本地設備上處理與保護您的相關資料。</p>
+
+    <h2>二、資料收集與使用</h2>
+    <p>本應用本身不會主動將您的個人資料上傳至任何遠端伺服器。應用在本地處理並儲存：</p>
+    <ul>
+      <li>帳戶設定資訊（例如：平台類型、帳戶名稱、手機號碼後綴等）。</li>
+      <li>登入會話相關資料（Cookie、快取等，由各平台 Web 內容產生）。</li>
+      <li>應用偏好設定（例如視窗大小、選擇的平台標籤等）。</li>
+    </ul>
+    <p>上述資料僅用於提供多帳戶會話管理功能與改善使用體驗，不會用於其他目的。</p>
+
+    <h2>三、本地儲存位置</h2>
+    <p>本應用會在您的作業系統使用者資料目錄中建立對應的應用資料夾，用於存放：</p>
+    <ul>
+      <li>組態檔（如帳戶列表）。</li>
+      <li>各帳戶對應的持久化會話分區資料。</li>
+    </ul>
+
+    <h2>四、第三方平台</h2>
+    <p>本應用載入 WhatsApp、Instagram、Messenger、微信等第三方平台的官方網頁版本。您在這些平台上的任何操作、訊息內容與個人資料，均受各平台之隱私權政策與服務條款約束。</p>
+
+    <h2>五、資料安全</h2>
+    <ul>
+      <li>每個帳戶使用獨立的會話分區，以減少資料交互的風險。</li>
+      <li>不提供內建的遠端同步服務，降低資料外洩風險。</li>
+      <li>建議您定期更新作業系統與防毒軟體，以保護本地環境安全。</li>
+    </ul>
+
+    <h2>六、資料匯出與刪除</h2>
+    <p>視本應用提供的功能，您可能可以：</p>
+    <ul>
+      <li>透過「匯出」功能備份帳戶設定與會話資料。</li>
+      <li>刪除單一帳戶，以移除對應的本地儲存資料。</li>
+      <li>解除安裝本應用並刪除相關資料夾，以清除所有本地資料（視作業系統實際行為而定）。</li>
+    </ul>
+
+    <h2>七、政策更新</h2>
+    <p>我們可能會不時更新本隱私權政策，以反映功能調整或法規變更。重大變更時，建議您重新閱讀本文件以了解最新內容。</p>
+
+    <h2>八、聯絡方式</h2>
+    <p>若您對本隱私權政策有任何疑問或建議，請透過您取得本應用的管道聯繫開發者。</p>
+
+    <div class="footer">
+      <button class="btn-close" onclick="window.close()">關閉</button>
+    </div>
+  </div>
+  <script>
+    if (window.zoomAPI) {
+      document.getElementById('zoom-out').onclick = function() { window.zoomAPI.zoomOut(); };
+      document.getElementById('zoom-in').onclick = function() { window.zoomAPI.zoomIn(); };
+      document.getElementById('zoom-reset').onclick = function() { window.zoomAPI.zoomReset(); };
+
+      const zoomValueEl = document.getElementById('zoom-value');
+      const updateDisplay = (factor) => {
+        if (!zoomValueEl) return;
+        zoomValueEl.textContent = Math.round((factor || 1) * 100) + '%';
+      };
+
+      if (window.zoomAPI.onZoomChanged) {
+        window.zoomAPI.onZoomChanged(updateDisplay);
+      }
+      if (window.zoomAPI.getZoomFactor) {
+        updateDisplay(window.zoomAPI.getZoomFactor());
+      } else {
+        updateDisplay(1);
+      }
+    }
+  </script>
+</body>
+</html>
+

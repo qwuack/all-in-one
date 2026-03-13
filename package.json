@@ -1,0 +1,91 @@
+{
+  "name": "crm-multi-account",
+  "version": "1.0.4",
+  "description": "A multi-account CRM client built with Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=development electron .",
+    "dev": "cross-env NODE_ENV=development electron . --debug",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:all": "electron-builder --win --mac",
+    "clean": "rimraf node_modules && npm install"
+  },
+  "keywords": [
+    "crm",
+    "multi-account",
+    "electron",
+    "desktop-app"
+  ],
+  "author": "Ryu",
+  "license": "MIT",
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "electron-store": "^8.1.0",
+    "mysql2": "^3.6.5",
+    "nodemailer": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.crm.multiaccount",
+    "productName": "CS-AI-CRM",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "env.local",
+        "to": "env.local"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.business"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "asar": true
+  }
+}
