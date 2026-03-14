@@ -1473,3 +1473,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initLoginFlow();
 });
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  try {
+    await window.electronAPI.logout();
+  } catch (e) { }
+
+  location.reload();
+});
