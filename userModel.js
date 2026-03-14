@@ -1,4 +1,4 @@
-const { query } = require('./db');
+const { query } = require('./db'); 
 
 async function getUserByEmail(email) {
     const rows = await query(
