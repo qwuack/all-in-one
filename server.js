@@ -1,4 +1,4 @@
-// server.js
+// server.js 
 const express = require("express");
 const cors = require("cors");
 const { getUserByEmail, updateUserPassword, getResetToken, deleteResetToken } = require("./userModel");
