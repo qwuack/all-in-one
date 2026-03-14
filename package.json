@@ -46,10 +46,6 @@
       {
         "from": "env.local",
         "to": "env.local"
-      },
-      {
-        "from": "cloudflared/cloudflared.exe",
-        "to": "cloudflared.exe"
       }
     ],
     "win": {

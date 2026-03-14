@@ -6,14 +6,14 @@ const { hashToken } = require('./repositories/userRepository');
 const { config } = require('./config');
 
 const app = express();
-app.use(express.json());
+
 
 // Allow GitHub Pages origin
 app.use(cors({
     origin: process.env.DOMAIN_URL, // allow only your frontend
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "PUT", "DELETE"]
 }));
-
+app.use(express.json());
 // Optional: keep your GET endpoint for token validation if you want
 app.get("/reset-password", async (req, res) => {
     const { email, key } = req.query;

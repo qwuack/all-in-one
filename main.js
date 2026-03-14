@@ -9,9 +9,9 @@ const logger = require('./logger');
 const crypto = require('crypto');
 const { saveResetToken, getUserByEmail } = require('./userModel');
 const sendResetEmail = require('./mailer');
-const { spawn } = require("child_process");
-const simpleGit = require("simple-git");
-const git = simpleGit({ baseDir: path.resolve(__dirname) });
+// const { spawn } = require("child_process");
+// const simpleGit = require("simple-git");
+// const git = simpleGit({ baseDir: path.resolve(__dirname) });
 
 process.on('uncaughtException', (error) => {
   logger.fatal('Main', 'Uncaught exception', error);
@@ -2154,67 +2154,63 @@ async function ensureTermsAccepted() {
   }
 }
 
-function getCloudflaredPath() {
-  if (app.isPackaged) {
-    // When built into exe
-    return path.join(process.resourcesPath, "cloudflared.exe");
-  } else {
-    // When running npm start
-    return path.join(__dirname, "cloudflared", "cloudflared.exe");
-  }
-}
+// function getCloudflaredPath() {
+//   if (app.isPackaged) {
+//     // When built into exe
+//     return path.join(process.resourcesPath, "cloudflared.exe");
+//   } else {
+//     // When running npm start
+//     return path.join(__dirname, "cloudflared", "cloudflared.exe");
+//   }
+// }
 
-function startTunnel() {
-  const cloudflaredPath = getCloudflaredPath();
-  console.log("Cloudflared path:", cloudflaredPath);
+// function startTunnel() {
+//   const cloudflaredPath = getCloudflaredPath();
+//   console.log("Cloudflared path:", cloudflaredPath);
 
-  const tunnel = spawn(cloudflaredPath, ["tunnel", "--url", "http://localhost:3000"], {
-    stdio: 'pipe',
-    windowsHide: true
-  });
+//   const tunnel = spawn(cloudflaredPath, ["tunnel", "--url", "http://localhost:3000"], {
+//     stdio: 'pipe',
+//     windowsHide: true
+//   });
 
-  tunnel.stdout.on("data", handleTunnelData);
-  tunnel.stderr.on("data", handleTunnelData);
+//   tunnel.stdout.on("data", handleTunnelData);
+//   tunnel.stderr.on("data", handleTunnelData);
 
-  function handleTunnelData(data) {
-    const text = data.toString();
-    console.log("cloudflared output:", text);
+//   function handleTunnelData(data) {
+//     const text = data.toString();
+//     console.log("cloudflared output:", text);
 
-    const match = text.match(/https:\/\/[^\s]+\.trycloudflare\.com/);
-    if (match) {
-      const tunnelUrl = match[0];
-      console.log("Tunnel URL detected:", tunnelUrl);
-      updateConfigFile(tunnelUrl);
-    }
-  }
-}
-const filePath = path.join(__dirname, "tunnel-config.json");
-async function updateConfigFile(url) {
-  const config = { api: url };
-  fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
-  console.log("tunnel-config.json written successfully!");
+//     const match = text.match(/https:\/\/[^\s]+\.trycloudflare\.com/);
+//     if (match) {
+//       const tunnelUrl = match[0];
+//       console.log("Tunnel URL detected:", tunnelUrl);
+//       updateConfigFile(tunnelUrl);
+//     }
+//   }
+// }
 
-  // read it back immediately to verify
-  const data = fs.readFileSync("tunnel-config.json", "utf8");
-  console.log("File content:", data);
-  // optional: call pushConfig if you want
-  // await pushConfig();
-}
+// async function updateConfigFile(url) {
+//   const config = { api: url };
+//   await fs.writeFile(path.join(__dirname, "tunnel-config.json"), JSON.stringify(config, null, 2));
 
-async function pushConfig() {
-  try {
-    await git.add("tunnel-config.json");
-    await git.commit("Update tunnel URL");
-    await git.push();
-    console.log("Tunnel config pushed successfully!");
-  } catch (err) {
-    console.error("Git push failed:", err);
-  }
-}
+//   // optional: call pushConfig if you want
+//   await pushConfig();
+// }
+
+// async function pushConfig() {
+//   try {
+//     await git.add("tunnel-config.json");
+//     await git.commit("Update tunnel URL");
+//     await git.push();
+//     console.log("Tunnel config pushed successfully!");
+//   } catch (err) {
+//     console.error("Git push failed:", err);
+//   }
+// }
 
 // 应用生命周期
 app.whenReady().then(async () => {
-  startTunnel();
+  // startTunnel();
   createMainWindow();
   await ensureTermsAccepted();
 
@@ -2319,7 +2315,7 @@ app.on('before-quit', async (event) => {
     }
   });
 
-  if (tunnel) tunnel.kill();
+  // if (tunnel) tunnel.kill();
 
   await delay(1000);
 
