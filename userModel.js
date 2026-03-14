@@ -18,7 +18,36 @@ async function saveResetToken(userId, token, expiry) {
     );
 }
 
+async function getResetToken(userId) {
+    const rows = await query(
+        `SELECT reset_token, reset_token_expiry FROM users WHERE id = ? LIMIT 1`,
+        [userId]
+    );
+    return rows[0] || null;
+}
+
+async function updateUserPassword(userId, passwordHash) {
+    await query(
+        `UPDATE users 
+     SET password_hash = ?
+     WHERE id = ?`,
+        [passwordHash, userId]
+    );
+}
+
+async function deleteResetToken(userId) {
+    await query(
+        `UPDATE users 
+     SET reset_token = NULL, reset_token_expiry = NULL
+     WHERE id = ?`,
+        [userId]
+    );
+}
+
 module.exports = {
     getUserByEmail,
-    saveResetToken
+    saveResetToken,
+    getResetToken,
+    updateUserPassword,
+    deleteResetToken
 };

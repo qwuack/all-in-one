@@ -5,6 +5,7 @@
 
 const { query } = require('../db');
 const crypto = require('crypto');
+const bcrypt = require("bcrypt");
 
 async function findUserByUsername(username) {
   const results = await query(
@@ -36,13 +37,17 @@ async function createUser(username, email, name, password) {
   };
 }
 
-function verifyPassword(password, hash) {
-  const computedHash = hashPassword(password);
-  return computedHash === hash;
+async function verifyPassword(password, hash) {
+  const computedHash = await bcrypt.compare(password, hash);
+  return computedHash;
 }
 
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+async function hashPassword(password) {
+  return await bcrypt.hash(password, 10);
+}
+
+async function hashToken(email, token) {
+  return crypto.createHash("sha256").update(email + token).digest("hex");
 }
 
 module.exports = {
@@ -50,5 +55,6 @@ module.exports = {
   findUserById,
   createUser,
   verifyPassword,
-  hashPassword
+  hashPassword,
+  hashToken
 };

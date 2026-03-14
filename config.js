@@ -112,6 +112,10 @@ const config = {
     password: process.env.SMTP_PASSWORD || ''
   },
 
+  domain: {
+    url: process.env.DOMAIN_URL || '',
+  },
+
   app: {
     sessionBasePath: 'sessions',
     enableSync: process.env.ENABLE_SYNC !== 'false'

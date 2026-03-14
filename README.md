@@ -140,6 +140,10 @@ GITHUB_BRANCH=main
 GITHUB_BASE_PATH=users
 GITHUB_PAT=ghp_your_personal_access_token
 
+### SMTP Setup
+SMTP_EMAIL=your_smtp_email
+SMTP_PASSWORD=your_smtp_password
+
 ### 日志
 LOG_LEVEL=INFO
 ```
