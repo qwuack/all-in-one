@@ -1255,6 +1255,49 @@ function startApp() {
   }
 }
 
+/**
+ * Set up zoom controls for the login screen
+ */
+function setupLoginZoomControls() {
+  const loginZoomOutBtn = document.getElementById('login-zoom-out');
+  const loginZoomInBtn = document.getElementById('login-zoom-in');
+  const loginZoomResetBtn = document.getElementById('login-zoom-reset');
+  const loginZoomLevelEl = document.getElementById('login-zoom-level');
+
+  if (!loginZoomLevelEl) return;
+
+  const updateLoginZoomDisplay = (factor) => {
+    loginZoomLevelEl.textContent = Math.round(factor * 100) + '%';
+  };
+
+  // Listen for zoom changes from the main process
+  if (window.electronAPI?.onZoomChanged) {
+    window.electronAPI.onZoomChanged((factor) => {
+      updateLoginZoomDisplay(factor);
+    });
+  }
+
+  // Get initial zoom factor
+  if (window.electronAPI?.getZoomFactor) {
+    window.electronAPI.getZoomFactor()
+      .then(factor => updateLoginZoomDisplay(factor))
+      .catch(() => updateLoginZoomDisplay(1));
+  } else {
+    updateLoginZoomDisplay(1);
+  }
+
+  // Bind zoom control events
+  if (loginZoomOutBtn && window.electronAPI?.zoomViewOut) {
+    loginZoomOutBtn.addEventListener('click', () => window.electronAPI.zoomViewOut());
+  }
+  if (loginZoomInBtn && window.electronAPI?.zoomViewIn) {
+    loginZoomInBtn.addEventListener('click', () => window.electronAPI.zoomViewIn());
+  }
+  if (loginZoomResetBtn && window.electronAPI?.zoomViewReset) {
+    loginZoomResetBtn.addEventListener('click', () => window.electronAPI.zoomViewReset());
+  }
+}
+
 function initLoginFlow() {
   const loginScreen = document.getElementById('login-screen');
   const appRoot = document.querySelector('.app');
@@ -1449,6 +1492,9 @@ function initLoginFlow() {
   setTimeout(() => {
     usernameInput.focus();
   }, 0);
+
+  // Setup zoom controls for login screen
+  setupLoginZoomControls();
 }
 
 // 初始化应用
