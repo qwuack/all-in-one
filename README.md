@@ -1,5 +1,5 @@
 # CS-AI-CRM 部署文档
-
+ 
 ## 📋 项目简介
 
 CS-AI-CRM 是一个基于 Electron 的多平台会话管理桌面应用，支持统一管理 WhatsApp、Instagram、Messenger、WeChat 等社交平台的客户对话。
