@@ -57,6 +57,7 @@ let currentUser = null;
 let accountsCache = [];
 // 控制 before-quit 僅執行一次，避免循環退出
 let isQuitting = false;
+let isForceQuit = false;
 let syncInProgress = false;
 let accountsChangedDuringSession = false;
 let syncDownInProgress = false;
@@ -203,11 +204,13 @@ const INSTAGRAM_MASK_DURATION_MS = 5000;
 
 // 缩放配置
 const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 3;
-const ZOOM_STEP = 0.1;
+const ZOOM_MAX = 1.7;
+const ZOOM_STEP = 0.05;
 const ZOOM_DEFAULT = 1;
 const STORE_ZOOM_VIEW = 'embeddedZoomFactor';
 const STORE_ZOOM_PAGE = 'pageZoomFactor';
+
+let currentZoomFactor = ZOOM_DEFAULT;
 
 // 平台 URL 映射
 const PLATFORM_URLS = {
@@ -1161,18 +1164,25 @@ function createMainWindow() {
   });
 
   mainWindow.on('close', async (event) => {
+    if (isForceQuit) return;
     event.preventDefault();
-    const result = await dialog.showMessageBox(mainWindow, {
-      type: 'warning',
-      title: '確認關閉',
-      message: '關閉應用將下線所有會話',
-      detail: '確定要關閉應用嗎？所有正在執行的會話將會下線。',
-      buttons: ['取消', '確定'],
-      defaultId: 0,
-      cancelId: 0
+
+    if (!mainWindow.webContents || mainWindow.webContents.isDestroyed()) {
+      isForceQuit = true;
+      mainWindow.destroy();
+      if (process.platform !== 'darwin') {
+        app.quit();
+      }
+      return;
+    }
+
+    const response = await new Promise(resolve => {
+      ipcMain.once('shutdown-confirm-response', (e, res) => resolve(res));
+      mainWindow.webContents.send('show-shutdown-confirm');
     });
 
-    if (result.response === 1) {
+    if (response === 1) {
+      isForceQuit = true;
       mainWindow.destroy();
       if (process.platform !== 'darwin') {
         app.quit();
@@ -1310,7 +1320,7 @@ async function adjustViewBounds() {
  * 获取内嵌页（BrowserView）当前缩放比例
  */
 function getEmbeddedZoomFactor() {
-  return store.get(STORE_ZOOM_VIEW, ZOOM_DEFAULT);
+  return currentZoomFactor;
 }
 
 /**
@@ -1319,7 +1329,7 @@ function getEmbeddedZoomFactor() {
  */
 function applyEmbeddedZoom(factor) {
   const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, factor));
-  store.set(STORE_ZOOM_VIEW, clamped);
+  currentZoomFactor = clamped;
 
   // 同步设置主窗口和内嵌页的缩放
   if (mainWindow && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
@@ -1928,6 +1938,7 @@ ipcMain.on('zoom-view-in', () => zoomViewIn());
 ipcMain.on('zoom-view-out', () => zoomViewOut());
 ipcMain.on('zoom-view-reset', () => zoomViewReset());
 ipcMain.handle('get-zoom-factor', () => getEmbeddedZoomFactor());
+ipcMain.on('set-zoom-factor', (event, factor) => applyEmbeddedZoom(factor));
 
 // 当前窗口页缩放（条款/隐私等弹窗）
 ipcMain.on('zoom-page-in', (event) => applyPageZoom(event.sender, 'in'));
@@ -2114,19 +2125,22 @@ async function ensureTermsAccepted() {
       return;
     }
 
+    // 确保 Renderer 已加载
+    await new Promise(resolve => {
+      if (mainWindow.webContents.isLoading()) {
+        mainWindow.webContents.once('did-finish-load', resolve);
+      } else {
+        resolve();
+      }
+    });
+
     // 迴圈直到使用者「同意」或「退出」
     // 0: 同意並繼續, 1: 查看條款, 2: 退出應用 / 關閉對話框
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const { response } = await dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: '使用條款確認',
-        message: '在使用 CS-AI-CRM 之前，請先閱讀並同意服務條款與隱私權政策。',
-        detail: '您可以點擊「查看條款」閱讀詳細內容，或於主視窗右下角隨時再次查看。',
-        buttons: ['同意並繼續', '查看條款', '退出應用'],
-        defaultId: 0,
-        cancelId: 2,
-        noLink: true
+      const response = await new Promise(resolve => {
+        ipcMain.once('startup-terms-response', (event, res) => resolve(res));
+        mainWindow.webContents.send('show-startup-terms');
       });
 
       if (response === 0) {
