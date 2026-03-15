@@ -283,12 +283,22 @@ class AccountManager {
     };
 
     window.electronAPI.onZoomChanged((factor) => {
+      localStorage.setItem('csai_zoom_factor', factor);
       updateDisplay(factor);
     });
 
     try {
-      const factor = await window.electronAPI.getZoomFactor();
-      updateDisplay(factor);
+      const savedZoom = localStorage.getItem('csai_zoom_factor');
+      if (savedZoom !== null && !isNaN(parseFloat(savedZoom))) {
+        const factor = parseFloat(savedZoom);
+        if (window.electronAPI.setZoomFactor) {
+          window.electronAPI.setZoomFactor(factor);
+        }
+        updateDisplay(factor);
+      } else {
+        const factor = await window.electronAPI.getZoomFactor();
+        updateDisplay(factor);
+      }
     } catch {
       updateDisplay(1);
     }
@@ -301,6 +311,19 @@ class AccountManager {
     }
     if (zoomResetBtn) {
       zoomResetBtn.addEventListener('click', () => window.electronAPI.zoomViewReset());
+    }
+
+    // Scrollwheel Zoom (Specific to Zoom Controls: No Ctrl needed)
+    const zoomControls = document.getElementById('zoom-controls');
+    if (zoomControls) {
+      zoomControls.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          window.electronAPI.zoomViewIn();
+        } else if (e.deltaY > 0) {
+          window.electronAPI.zoomViewOut();
+        }
+      }, { passive: false });
     }
   }
 
@@ -1255,6 +1278,72 @@ function startApp() {
   }
 }
 
+/**
+ * Set up zoom controls for the login screen
+ */
+function setupLoginZoomControls() {
+  const loginZoomOutBtn = document.getElementById('login-zoom-out');
+  const loginZoomInBtn = document.getElementById('login-zoom-in');
+  const loginZoomResetBtn = document.getElementById('login-zoom-reset');
+  const loginZoomLevelEl = document.getElementById('login-zoom-level');
+
+  if (!loginZoomLevelEl) return;
+
+  const updateLoginZoomDisplay = (factor) => {
+    loginZoomLevelEl.textContent = Math.round(factor * 100) + '%';
+  };
+
+  // Listen for zoom changes from the main process
+  if (window.electronAPI?.onZoomChanged) {
+    window.electronAPI.onZoomChanged((factor) => {
+      localStorage.setItem('csai_zoom_factor', factor);
+      updateLoginZoomDisplay(factor);
+    });
+  }
+
+  // Get initial zoom factor
+  if (window.electronAPI?.getZoomFactor) {
+    const savedZoom = localStorage.getItem('csai_zoom_factor');
+    if (savedZoom !== null && !isNaN(parseFloat(savedZoom))) {
+      const factor = parseFloat(savedZoom);
+      if (window.electronAPI.setZoomFactor) {
+        window.electronAPI.setZoomFactor(factor);
+      }
+      updateLoginZoomDisplay(factor);
+    } else {
+      window.electronAPI.getZoomFactor()
+        .then(factor => updateLoginZoomDisplay(factor))
+        .catch(() => updateLoginZoomDisplay(1));
+    }
+  } else {
+    updateLoginZoomDisplay(1);
+  }
+
+  // Bind zoom control events
+  if (loginZoomOutBtn && window.electronAPI?.zoomViewOut) {
+    loginZoomOutBtn.addEventListener('click', () => window.electronAPI.zoomViewOut());
+  }
+  if (loginZoomInBtn && window.electronAPI?.zoomViewIn) {
+    loginZoomInBtn.addEventListener('click', () => window.electronAPI.zoomViewIn());
+  }
+  if (loginZoomResetBtn && window.electronAPI?.zoomViewReset) {
+    loginZoomResetBtn.addEventListener('click', () => window.electronAPI.zoomViewReset());
+  }
+
+  // Scrollwheel Zoom Over Login Zoom Controls (No Ctrl needed)
+  const loginZoomControls = document.getElementById('login-zoom-controls');
+  if (loginZoomControls && window.electronAPI?.zoomViewIn && window.electronAPI?.zoomViewOut) {
+    loginZoomControls.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        window.electronAPI.zoomViewIn();
+      } else if (e.deltaY > 0) {
+        window.electronAPI.zoomViewOut();
+      }
+    }, { passive: false });
+  }
+}
+
 function initLoginFlow() {
   const loginScreen = document.getElementById('login-screen');
   const appRoot = document.querySelector('.app');
@@ -1449,6 +1538,9 @@ function initLoginFlow() {
   setTimeout(() => {
     usernameInput.focus();
   }, 0);
+
+  // Setup zoom controls for login screen
+  setupLoginZoomControls();
 }
 
 // 初始化应用
@@ -1471,5 +1563,89 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Scrollwheel Zoom (Global: Requires Ctrl)
+  // This is added here so it is active on the login page as well.
+  window.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        window.electronAPI.zoomViewIn();
+      } else if (e.deltaY > 0) {
+        window.electronAPI.zoomViewOut();
+      }
+    }
+  }, { passive: false });
+
+  // --- Startup Terms Screen Logic ---
+  const startupTermsScreen = document.getElementById('startup-terms-screen');
+  const startupTermsAgree = document.getElementById('startup-terms-agree');
+  const startupTermsView = document.getElementById('startup-terms-view');
+  const startupTermsQuit = document.getElementById('startup-terms-quit');
+
+  if (window.electronAPI && window.electronAPI.onShowStartupTerms) {
+    window.electronAPI.onShowStartupTerms(() => {
+      if (startupTermsScreen) startupTermsScreen.style.display = 'flex';
+    });
+  }
+  if (startupTermsAgree) {
+    startupTermsAgree.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.sendStartupTermsResponse) {
+        startupTermsScreen.style.display = 'none';
+        window.electronAPI.sendStartupTermsResponse(0); // 0 = Agree
+      }
+    });
+  }
+  if (startupTermsView) {
+    startupTermsView.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.sendStartupTermsResponse) {
+        startupTermsScreen.style.display = 'none';
+        window.electronAPI.sendStartupTermsResponse(1); // 1 = View
+      }
+    });
+  }
+  if (startupTermsQuit) {
+    startupTermsQuit.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.sendStartupTermsResponse) {
+        startupTermsScreen.style.display = 'none';
+        window.electronAPI.sendStartupTermsResponse(2); // 2 = Quit
+      }
+    });
+  }
+
+  // --- Shutdown Confirm Screen Logic ---
+  const shutdownConfirmScreen = document.getElementById('shutdown-confirm-screen');
+  const shutdownConfirmYes = document.getElementById('shutdown-confirm-yes');
+  const shutdownConfirmCancel = document.getElementById('shutdown-confirm-cancel');
+
+  if (window.electronAPI && window.electronAPI.onShowShutdownConfirm) {
+    window.electronAPI.onShowShutdownConfirm(() => {
+      if (shutdownConfirmScreen) shutdownConfirmScreen.style.display = 'flex';
+    });
+  }
+  if (shutdownConfirmYes) {
+    shutdownConfirmYes.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.sendShutdownConfirmResponse) {
+        shutdownConfirmScreen.style.display = 'none';
+        window.electronAPI.sendShutdownConfirmResponse(1); // 1 = Confirm
+      }
+    });
+  }
+  if (shutdownConfirmCancel) {
+    shutdownConfirmCancel.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.sendShutdownConfirmResponse) {
+        shutdownConfirmScreen.style.display = 'none';
+        window.electronAPI.sendShutdownConfirmResponse(0); // 0 = Cancel
+      }
+    });
+  }
+
   initLoginFlow();
+});
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  try {
+    await window.electronAPI.logout();
+  } catch (e) { }
+
+  location.reload();
 });
