@@ -24,7 +24,7 @@ async function findUserById(userId) {
 }
 
 async function createUser(username, email, name, password) {
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
 
   const result = await query(
     'INSERT INTO users (username, email, name, password_hash) VALUES (?, ?, ?, ?)',
