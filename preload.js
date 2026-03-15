@@ -114,6 +114,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getZoomFactor: () => {
     return ipcRenderer.invoke('get-zoom-factor');
   },
+  setZoomFactor: (factor) => {
+    ipcRenderer.send('set-zoom-factor', factor);
+  },
   onZoomChanged: (callback) => {
     ipcRenderer.on('zoom-changed', (event, factor) => callback(factor));
   },
@@ -141,5 +144,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 面板拖拽调整大小 → 通知主进程重新对齐 BrowserView
   panelResized: () => {
     ipcRenderer.send('panel-resized');
+  },
+
+  // App lifecycle dialogs
+  onShowStartupTerms: (callback) => {
+    ipcRenderer.on('show-startup-terms', () => callback());
+  },
+  sendStartupTermsResponse: (response) => {
+    ipcRenderer.send('startup-terms-response', response);
+  },
+  onShowShutdownConfirm: (callback) => {
+    ipcRenderer.on('show-shutdown-confirm', () => callback());
+  },
+  sendShutdownConfirmResponse: (response) => {
+    ipcRenderer.send('shutdown-confirm-response', response);
   }
 });
