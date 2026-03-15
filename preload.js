@@ -46,39 +46,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
   resumeAccount: (partition) => {
     ipcRenderer.send('resume-account', partition);
   },
-  
+
   // 账户：事件
   onAccountsUpdated: (callback) => {
     ipcRenderer.on('accounts-updated', (event, accounts) => {
       callback(accounts);
     });
   },
-  
+
   onAccountSwitched: (callback) => {
     ipcRenderer.on('account-switched', (event, partition) => {
       callback(partition);
     });
   },
-  
+
   onAccountPaused: (callback) => {
     ipcRenderer.on('account-paused', (event, partition) => {
       callback(partition);
     });
   },
-  
+
   onAccountResumed: (callback) => {
     ipcRenderer.on('account-resumed', (event, partition) => {
       callback(partition);
     });
   },
-  
+
   // 消息：事件
   onMessagesUpdated: (callback) => {
     ipcRenderer.on('messages-updated', (event, partition, messageData) => {
       callback(partition, messageData);
     });
   },
-  
+
   // 错误：事件
   onAccountCreateError: (callback) => {
     ipcRenderer.on('account-create-error', (event, errorMessage) => {
@@ -91,12 +91,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     if (typeof callback !== 'function') return;
     ipcRenderer.on('sync-status', (event, payload) => callback(payload));
   },
-  
+
   // 视图：对话框显示期间隐藏/恢复 BrowserView
   hideBrowserView: () => {
     ipcRenderer.send('hide-browser-view');
   },
-  
+
   showBrowserView: () => {
     ipcRenderer.send('show-browser-view');
   },
@@ -113,6 +113,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   getZoomFactor: () => {
     return ipcRenderer.invoke('get-zoom-factor');
+  },
+  setZoomFactor: (factor) => {
+    ipcRenderer.send('set-zoom-factor', factor);
   },
   onZoomChanged: (callback) => {
     ipcRenderer.on('zoom-changed', (event, factor) => callback(factor));
@@ -141,5 +144,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 面板拖拽调整大小 → 通知主进程重新对齐 BrowserView
   panelResized: () => {
     ipcRenderer.send('panel-resized');
+  },
+
+  // App lifecycle dialogs
+  onShowStartupTerms: (callback) => {
+    ipcRenderer.on('show-startup-terms', () => callback());
+  },
+  sendStartupTermsResponse: (response) => {
+    ipcRenderer.send('startup-terms-response', response);
+  },
+  onShowShutdownConfirm: (callback) => {
+    ipcRenderer.on('show-shutdown-confirm', () => callback());
+  },
+  sendShutdownConfirmResponse: (response) => {
+    ipcRenderer.send('shutdown-confirm-response', response);
   }
 });
