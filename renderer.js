@@ -288,17 +288,8 @@ class AccountManager {
     });
 
     try {
-      const savedZoom = localStorage.getItem('csai_zoom_factor');
-      if (savedZoom !== null && !isNaN(parseFloat(savedZoom))) {
-        const factor = parseFloat(savedZoom);
-        if (window.electronAPI.setZoomFactor) {
-          window.electronAPI.setZoomFactor(factor);
-        }
-        updateDisplay(factor);
-      } else {
-        const factor = await window.electronAPI.getZoomFactor();
-        updateDisplay(factor);
-      }
+      const factor = await window.electronAPI.getZoomFactor();
+      updateDisplay(factor);
     } catch {
       updateDisplay(1);
     }
@@ -1640,6 +1631,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   initLoginFlow();
+});
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  try {
+    await window.electronAPI.logout();
+  } catch (e) { }
+
+  location.reload();
 });
 
 document.getElementById("logout-btn").addEventListener("click", async () => {
