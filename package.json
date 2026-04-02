@@ -1,8 +1,8 @@
 {
-  "name": "crm-multi-account",
-  "version": "1.0.4",
-  "description": "A multi-account CRM client built with Electron",
-  "main": "main.js",
+  "name": "all-in-one",
+  "version": "1.0.7",
+  "description": "A multi social communication hub built with Electron",
+  "main": "js/main.js",
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",
     "dev": "cross-env NODE_ENV=development electron . --debug",
@@ -13,8 +13,8 @@
     "clean": "rimraf node_modules && npm install"
   },
   "keywords": [
-    "crm",
-    "multi-account",
+    "allinone",
+    "multi-social",
     "electron",
     "desktop-app"
   ],
@@ -37,8 +37,8 @@
     "simple-git": "^3.33.0"
   },
   "build": {
-    "appId": "com.crm.multiaccount",
-    "productName": "CS-AI-CRM",
+    "appId": "com.allinone.app",
+    "productName": "ALL-in-ONE",
     "directories": {
       "output": "dist"
     },

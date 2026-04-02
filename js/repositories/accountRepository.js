@@ -79,10 +79,10 @@ async function deleteAccount(userId, partition) {
   return result.affectedRows > 0;
 }
 
-async function renameAccount(userId, partition, newName) {
+async function updateAccount(userId, partition, newName, newPhoneNumber) {
   const result = await query(
-    'UPDATE accounts SET name = ? WHERE user_id = ? AND partition_key = ?',
-    [newName, userId, partition]
+    'UPDATE accounts SET name = ?, phone_number = ? WHERE user_id = ? AND partition_key = ?',
+    [newName, newPhoneNumber, userId, partition]
   );
 
   if (result.affectedRows === 0) {
@@ -149,7 +149,7 @@ module.exports = {
   accountExists,
   createAccount,
   deleteAccount,
-  renameAccount,
+  updateAccount,
   updateAccountStatus,
   updateAccountMessageInfo,
   markAccountNeedsSync,

@@ -35,22 +35,22 @@ const DEFAULT_IGNORE_DIR_NAMES = new Set([
 function defaultShouldIgnorePath(filePath) {
   const p = normalizePath(filePath);
   const segments = p.split('/').filter(Boolean).map(s => s.toLowerCase());
-  
+
   // 忽略缓存目录
   if (segments.some(seg => DEFAULT_IGNORE_DIR_NAMES.has(seg))) {
     return true;
   }
-  
+
   // 忽略 LevelDB 锁定文件（这些文件不应该被同步，会在浏览器启动时自动创建）
   const fileName = segments[segments.length - 1];
   if (fileName === 'lock') {
     // LOCK 文件总是忽略（无论在哪里）
     return true;
   }
-  
+
   // 允许 LevelDB 的其他文件（CURRENT, MANIFEST, .log, .ldb 等）
   // 这些是数据库文件，应该被同步
-  
+
   return false;
 }
 
@@ -87,7 +87,7 @@ async function withPathLock(key, fn) {
   const lockKey = String(key || '');
   const prev = _pathLocks.get(lockKey) || Promise.resolve();
   const run = prev
-    .catch(() => {})
+    .catch(() => { })
     .then(async () => await fn());
   // store tail so the next caller will wait for *this* run to complete
   _pathLocks.set(lockKey, run);
@@ -105,26 +105,24 @@ function isShaConflictStatus(status) {
   return status === 409 || status === 422;
 }
 
-async function putFileWithShaRefresh(normalizedPath, url, data, attempts = 3) {
+async function putFileWithShaRefresh(normalizedPath, url, data, attempts = 10) {
   let lastErr = null;
   for (let i = 0; i < attempts; i += 1) {
     try {
       const response = await axios.put(url, data, {
         headers: createHeaders(),
-        timeout: 30000
+        timeout: 45000 // Increased timeout for heavy syncs
       });
       return response.data;
     } catch (error) {
       lastErr = error;
       const status = error.response?.status;
       const apiMsg = error.response?.data?.message;
-      const docUrl = error.response?.data?.documentation_url;
-      // 重试过程日志会非常刷屏（尤其是 LevelDB/CacheStorage 文件），这里不输出。
+
+      // Only retry on 409 (Conflict) / 422 (Unprocessable) - SHA mismatches
       if (!isShaConflictStatus(status) || i >= attempts - 1) throw error;
 
-      // 409/422: sha 过期/缺失（并发上传最常见）。
-      // 优先从 GitHub 的 message 里直接提取当前 sha（减少额外请求与竞态窗口）：
-      // "is at <currentSha> but expected <sentSha>"
+      // Extract current SHA from GitHub's error message
       let refreshedSha = null;
       if (typeof apiMsg === 'string') {
         const m = apiMsg.match(/is at ([0-9a-f]{40}) but expected ([0-9a-f]{40})/i);
@@ -133,8 +131,9 @@ async function putFileWithShaRefresh(normalizedPath, url, data, attempts = 3) {
 
       if (refreshedSha) {
         data.sha = refreshedSha;
+        logger.debug('GitHub', `409 Conflict: Refreshed SHA for ${normalizedPath} (Attempt ${i + 1})`);
       } else {
-        // 回退：再查一次远端 sha
+        // Fallback: fetch SHA manually
         const existsInfo = await fileExists(normalizedPath).catch(() => ({ exists: false }));
         if (existsInfo?.sha) {
           data.sha = existsInfo.sha;
@@ -143,8 +142,10 @@ async function putFileWithShaRefresh(normalizedPath, url, data, attempts = 3) {
         }
       }
 
-      const jitter = Math.floor(Math.random() * 200);
-      await sleep(350 * (i + 1) + jitter);
+      // Exponential backoff with jitter (helps branch head stabilize)
+      const baseDelay = 500 * Math.pow(1.5, i);
+      const jitter = Math.floor(Math.random() * 300);
+      await sleep(baseDelay + jitter);
     }
   }
   throw lastErr;
@@ -201,7 +202,7 @@ function createHeaders() {
   return {
     'Authorization': `token ${config.github.pat}`,
     'Accept': 'application/vnd.github.v3+json',
-    'User-Agent': 'CS-AI-CRM-Sync'
+    'User-Agent': 'ALL-in-ONE-Sync'
   };
 }
 
@@ -282,11 +283,11 @@ async function getFileRaw(filePath) {
 async function putFile(filePath, content, message, sha = null) {
   const normalizedPath = normalizePath(filePath);
   const url = `${GITHUB_API_BASE}/repos/${config.github.owner}/${config.github.repo}/contents/${normalizedPath}`;
-  
+
   // 支持 Buffer 和字符串
   const buf = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf-8');
   const contentBase64 = buf.toString('base64');
-  
+
   const data = {
     message: message || `Update ${normalizedPath}`,
     content: contentBase64,
@@ -309,19 +310,19 @@ async function putFile(filePath, content, message, sha = null) {
     const statusText = error.response?.statusText;
     const apiMsg = error.response?.data?.message;
     const docUrl = error.response?.data?.documentation_url;
-    
+
     logger.error('GitHub', `putFile failed: ${normalizedPath}`, error);
-    
+
     if (error.response) {
       logger.error('GitHub', `HTTP Status: ${status} ${statusText}`);
       if (apiMsg) logger.error('GitHub', `HTTP Message: ${apiMsg}`);
       if (docUrl) logger.error('GitHub', `HTTP Doc: ${docUrl}`);
     }
-    
+
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
       throw new Error(`Request timeout: ${normalizedPath}`);
     }
-    
+
     throw error;
   }
 }
@@ -333,15 +334,15 @@ async function putFile(filePath, content, message, sha = null) {
  */
 async function fileExists(filePath) {
   const normalizedPath = normalizePath(filePath);
-  
+
   try {
     const url = `${GITHUB_API_BASE}/repos/${config.github.owner}/${config.github.repo}/contents/${normalizedPath}`;
     logger.debug('GitHub', `fileExists: checking ${normalizedPath}`);
-    
+
     // 使用 axios 的 cancel token 来确保可以取消请求
     let source = null;
     let timeoutId = null;
-    
+
     if (CancelToken) {
       source = CancelToken.source();
       timeoutId = setTimeout(() => {
@@ -350,7 +351,7 @@ async function fileExists(filePath) {
         }
       }, 25000); // 25秒超时
     }
-    
+
     try {
       const requestConfig = {
         headers: createHeaders(),
@@ -359,15 +360,15 @@ async function fileExists(filePath) {
         },
         timeout: 25000 // 25秒超时
       };
-      
+
       if (source && source.token) {
         requestConfig.cancelToken = source.token;
       }
-      
+
       const response = await axios.get(url, requestConfig);
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.data && response.data.sha) {
         logger.debug('GitHub', `fileExists: ${normalizedPath} exists (sha: ${response.data.sha.substring(0, 8)}...)`);
         return {
@@ -390,24 +391,24 @@ async function fileExists(filePath) {
     if (isCancel && isCancel(error)) {
       throw new Error(`Request timeout: ${normalizedPath}`);
     }
-    
+
     if (error.response) {
       const status = error.response.status;
-      
+
       if (status === 404) {
         logger.debug('GitHub', `fileExists: ${normalizedPath} does not exist (404)`);
         return { exists: false };
       }
-      
+
       logger.error('GitHub', `fileExists failed: ${normalizedPath}`, error);
     } else {
       logger.error('GitHub', `fileExists failed: ${normalizedPath}`, error);
     }
-    
+
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
       throw new Error(`Request timeout: ${normalizedPath}`);
     }
-    
+
     throw error;
   }
 }
@@ -457,7 +458,7 @@ async function downloadDirectory(remotePath, localPath, options = {}) {
     const maxFileSizeBytes = Number.isFinite(options.maxFileSizeBytes) ? options.maxFileSizeBytes : 10 * 1024 * 1024;
     const overwrite = options.overwrite === true;
     const skipUnchanged = options.skipUnchanged === true;
-    const concurrency = Number.isFinite(options.concurrency) ? options.concurrency : 6;
+    const concurrency = Number.isFinite(options.concurrency) ? options.concurrency : 1; // Default to 1 (Serialized)
     const limiter = createLimiter(concurrency);
 
     await fs.mkdir(localPath, { recursive: true });
@@ -472,7 +473,7 @@ async function downloadDirectory(remotePath, localPath, options = {}) {
         if (shouldIgnore(itemRemotePath, item)) continue;
 
         if (item.type === 'dir') {
-          await fs.mkdir(itemLocalPath, { recursive: true }).catch(() => {});
+          await fs.mkdir(itemLocalPath, { recursive: true }).catch(() => { });
           await walk(itemRemotePath, itemLocalPath);
         } else if (item.type === 'file') {
           if (typeof item.size === 'number' && item.size > maxFileSizeBytes) {
@@ -610,7 +611,7 @@ async function collectLocalFiles(localPath, remoteBasePath, options = {}) {
 async function uploadDirectory(localPath, remoteBasePath, message = 'Upload directory', options = {}) {
   try {
     const skipUnchanged = options.skipUnchanged === true;
-    const concurrency = Number.isFinite(options.concurrency) ? options.concurrency : 6;
+    const concurrency = Number.isFinite(options.concurrency) ? options.concurrency : 1;
     const limiter = createLimiter(concurrency);
     const smallFileShaThresholdBytes = Number.isFinite(options.smallFileShaThresholdBytes)
       ? options.smallFileShaThresholdBytes
@@ -699,43 +700,55 @@ async function uploadDirectory(localPath, remoteBasePath, message = 'Upload dire
  * @param {string} message - 提交消息
  * @returns {Promise<void>}
  */
-async function deleteFile(filePath, message = 'Delete file') {
+async function deleteFile(filePath, message = 'Delete file', attempts = 10) {
   const normalizedPath = normalizePath(filePath);
-  
-  try {
-    const existsInfo = await fileExists(normalizedPath);
-    if (!existsInfo.exists || !existsInfo.sha) {
-      logger.debug('GitHub', `deleteFile: File does not exist, skipping: ${normalizedPath}`);
-      return;
-    }
+  let lastErr = null;
 
-    const url = `${GITHUB_API_BASE}/repos/${config.github.owner}/${config.github.repo}/contents/${normalizedPath}`;
-    logger.debug('GitHub', `deleteFile: Deleting file: ${normalizedPath}`);
-    
-    // GitHub Contents API: delete must be HTTP DELETE with a JSON body (message/sha/branch)
-    const response = await axios.delete(url, {
-      headers: createHeaders(),
-      timeout: 30000,
-      data: {
-        message: message,
-        sha: existsInfo.sha,
-        branch: config.github.branch
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      const existsInfo = await fileExists(normalizedPath);
+      if (!existsInfo.exists || !existsInfo.sha) {
+        logger.debug('GitHub', `deleteFile: File does not exist, skipping: ${normalizedPath}`);
+        return;
       }
-    });
 
-    logger.debug('GitHub', `deleteFile: File deleted successfully: ${normalizedPath}`);
-    return response.data;
-  } catch (error) {
-    const status = error.response?.status;
-    
-    if (error.response && status === 404) {
-      logger.debug('GitHub', `deleteFile: File does not exist (404), skipping: ${normalizedPath}`);
-      return;
+      const url = `${GITHUB_API_BASE}/repos/${config.github.owner}/${config.github.repo}/contents/${normalizedPath}`;
+      logger.debug('GitHub', `deleteFile: Deleting file: ${normalizedPath} (Attempt ${i + 1})`);
+
+      const response = await axios.delete(url, {
+        headers: createHeaders(),
+        timeout: 30000,
+        data: {
+          message: message,
+          sha: existsInfo.sha,
+          branch: config.github.branch
+        }
+      });
+
+      logger.debug('GitHub', `deleteFile: File deleted successfully: ${normalizedPath}`);
+      return response.data;
+    } catch (error) {
+      lastErr = error;
+      const status = error.response?.status;
+      const apiMsg = error.response?.data?.message;
+
+      if (status === 404) {
+        logger.debug('GitHub', `deleteFile: File does not exist (404), skipping: ${normalizedPath}`);
+        return;
+      }
+
+      // Only retry on 409 (Conflict) / 422 (Unprocessable) - Branch head moved or SHA mismatch
+      if (!isShaConflictStatus(status) || i >= attempts - 1) throw error;
+
+      logger.debug('GitHub', `deleteFile: 409 Conflict for ${normalizedPath}, retrying... (Attempt ${i + 1})`);
+
+      // Exponential backoff with jitter
+      const baseDelay = 500 * Math.pow(1.5, i);
+      const jitter = Math.floor(Math.random() * 300);
+      await sleep(baseDelay + jitter);
     }
-    
-    logger.error('GitHub', `deleteFile: Failed to delete file ${normalizedPath}`, error);
-    throw error;
   }
+  throw lastErr;
 }
 
 /**
@@ -746,36 +759,32 @@ async function deleteFile(filePath, message = 'Delete file') {
  */
 async function deleteDirectory(dirPath, message = 'Delete directory') {
   const normalizedPath = normalizePath(dirPath);
-  
+
   try {
     logger.debug('GitHub', `deleteDirectory: Deleting directory: ${normalizedPath}`);
-    
+
     const items = await listDirectory(normalizedPath);
-    
-    for (const item of items) {
+    const concurrency = 1; // Serialize deletions to prevent branch head conflicts
+    const limiter = createLimiter(concurrency);
+
+    await Promise.all(items.map(item => limiter(async () => {
       const itemPath = item.path;
       if (item.type === 'file') {
-        try {
-          await deleteFile(itemPath, `${message} - ${item.name}`);
-        } catch (e) {
-          logger.warn('GitHub', `deleteDirectory: Failed to delete file ${itemPath}`, e);
-        }
+        // We do NOT catch errors here; if one file fails to delete after 10 attempts,
+        // we want deleteDirectory to fail so the sync result is accurate.
+        await deleteFile(itemPath, `${message} - ${item.name}`);
       } else if (item.type === 'dir') {
-        try {
-          await deleteDirectory(itemPath, `${message} - ${item.name}`);
-        } catch (e) {
-          logger.warn('GitHub', `deleteDirectory: Failed to delete directory ${itemPath}`, e);
-        }
+        await deleteDirectory(itemPath, `${message} - ${item.name}`);
       }
-    }
-    
+    })));
+
     logger.debug('GitHub', `deleteDirectory: Directory deleted successfully: ${normalizedPath}`);
   } catch (error) {
     if (error.response?.status === 404) {
       logger.debug('GitHub', `deleteDirectory: Directory does not exist, skipping: ${normalizedPath}`);
       return;
     }
-    
+
     logger.error('GitHub', `deleteDirectory: Failed to delete directory ${normalizedPath}`, error);
     throw error;
   }

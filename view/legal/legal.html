@@ -1,0 +1,44 @@
+<!-- ══ Legal Dialog ══ -->
+<div id="legal-dialog" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog modal-dialog-legal">
+        <div class="modal-header legal-modal-header">
+            <div class="legal-modal-title-group">
+                <h3 class="modal-title" id="legal-dialog-title" data-i18n="legalTitle">Legal Information</h3>
+                <p class="legal-modal-subtitle" data-i18n="legalSubtitle">Terms of Service and Privacy Policy</p>
+            </div>
+            <div class="legal-header-right">
+                <div class="lang-switcher lang-switcher-legal" id="lang-switcher-legal" title="Switch Language">
+                    <button class="lang-btn active" data-lang="en" aria-pressed="true">EN</button>
+                    <button class="lang-btn" data-lang="zh-CN" aria-pressed="false">简</button>
+                    <button class="lang-btn" data-lang="zh-TW" aria-pressed="false">繁</button>
+                </div>
+                <div class="zoom-controls" title="Zoom legal content">
+                    <div class="zoom-controls-container">
+                        <button type="button" class="action-btn zoom-btn legal-zoom-btn" id="legal-zoom-out"
+                            aria-label="Zoom Out">−</button>
+                        <span class="zoom-level legal-zoom-level" id="legal-zoom-level">100%</span>
+                        <button type="button" class="action-btn zoom-btn legal-zoom-btn" id="legal-zoom-in"
+                            aria-label="Zoom In">+</button>
+                    </div>
+                    <button type="button" class="action-btn zoom-reset-btn legal-zoom-reset-btn" id="legal-zoom-reset"
+                        aria-label="Reset Zoom">Reset</button>
+                </div>
+                <button class="modal-close" id="legal-dialog-close" aria-label="Close">
+                    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                        <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="legal-modal-tabs">
+            <button type="button" id="legal-tab-privacy" class="legal-tab" aria-selected="false"
+                data-i18n="legalTabPrivacy">Privacy Policy</button>
+            <button type="button" id="legal-tab-terms" class="legal-tab active" aria-selected="true"
+                data-i18n="legalTabTerms">Terms of Service</button>
+        </div>
+        <div class="modal-body legal-modal-body">
+            <div id="legal-terms-content" class="legal-content"></div>
+            <div id="legal-privacy-content" class="legal-content" style="display: none;"></div>
+        </div>
+    </div>
+</div>

@@ -35,7 +35,7 @@ const {
   accountExists,
   createAccount,
   deleteAccount: dbDeleteAccount,
-  renameAccount: dbRenameAccount,
+  updateAccount: dbUpdateAccount,
   updateAccountStatus: dbUpdateAccountStatus
 } = require('./repositories/accountRepository');
 
@@ -48,6 +48,8 @@ let browserViews = new Map();
 let currentView = null;
 let instagramMaskView = null;
 let instagramMaskTimeout = null;
+let shutdownView = null;
+let shutdownResolve = null;
 let legalDialogWaiters = new Map();
 // 記錄每個 Instagram 帳戶是否已經顯示過「首次載入」遮罩
 const instagramInitialMaskShown = new Set();
@@ -58,12 +60,60 @@ let accountsCache = [];
 // 控制 before-quit 僅執行一次，避免循環退出
 let isQuitting = false;
 let isForceQuit = false;
+let backgroundSyncInterval = null;
 let syncInProgress = false;
 let accountsChangedDuringSession = false;
+const dirtyPartitions = new Set();
 let syncDownInProgress = false;
 const syncingDownPartitions = new Set();
-let pendingSwitchPartition = null;
+let currentLanguage = store.get('all-in-one-language', 'en');
+let systemOverlayView = null;
 let tunnel;
+
+/**
+ * 獲取各語言對應的「載入中」文字
+ */
+function getLoadingText(lang) {
+  const texts = {
+    'en': 'Loading...',
+    'zh-CN': '加载中...',
+    'zh-TW': '載入中...'
+  };
+  return texts[lang] || texts['en'];
+}
+
+/**
+ * 獲取各語言對應的「上傳中」文字
+ */
+function getSavingText(lang) {
+  const texts = {
+    'en': 'Uploading your data...',
+    'zh-CN': '正在上传您的数据...',
+    'zh-TW': '正在上傳您的數據...'
+  };
+  return texts[lang] || texts['en'];
+}
+
+function startPeriodicBackgroundSync() {
+  if (backgroundSyncInterval) clearInterval(backgroundSyncInterval);
+  // Auto-sync every 10 minutes (600,000 ms)
+  backgroundSyncInterval = setInterval(async () => {
+    if (!currentUser || isQuitting || syncInProgress) return;
+    try {
+      logger.info('Sync', 'Triggering periodic background sync...');
+      await syncSessionsUpForCurrentUser();
+    } catch (e) {
+      logger.error('Sync', 'Periodic background sync failed', e);
+    }
+  }, 10 * 60 * 1000);
+}
+
+function stopPeriodicBackgroundSync() {
+  if (backgroundSyncInterval) {
+    clearInterval(backgroundSyncInterval);
+    backgroundSyncInterval = null;
+  }
+}
 
 function getSyncManifestPathForUser(userId) {
   try {
@@ -95,7 +145,7 @@ function shouldIgnoreLocalSyncPath(absPath) {
   return false;
 }
 
-async function computeLocalSyncManifestForCurrentUser() {
+async function computeLocalSyncManifestForCurrentUser(dbAccounts, targetPartitions = null, prevEntries = null) {
   if (!currentUser?.id) return null;
   const { configPath, partitionsPath } = getUserDataPaths();
   const entries = {};
@@ -117,8 +167,33 @@ async function computeLocalSyncManifestForCurrentUser() {
     }
   }
 
-  // Partitions/*
-  await walkDir(partitionsPath, 'Partitions');
+  // Partitions/* (僅掃描目前使用者擁有的 account 分區)
+  if (dbAccounts && Array.isArray(dbAccounts)) {
+    for (const acc of dbAccounts) {
+      if (!acc.partition) continue;
+      
+      // If we are doing a targeted scan and this partition is not targeted, copy its previous entries to avoid marking them as deleted
+      if (targetPartitions && !targetPartitions.has(acc.partition)) {
+        if (prevEntries) {
+          const prefix = `Partitions/${acc.partition}/`;
+          for (const [k, v] of Object.entries(prevEntries)) {
+            if (k.startsWith(prefix)) {
+              entries[k] = v;
+            }
+          }
+        }
+        continue;
+      }
+
+      const accountPartitionPath = path.join(partitionsPath, acc.partition);
+      const exists = await fs.stat(accountPartitionPath).then(s => s.isDirectory()).catch(() => false);
+      if (exists) {
+        await walkDir(accountPartitionPath, `Partitions/${acc.partition}`);
+      }
+    }
+  } else {
+    logger.warn('Sync', 'computeLocalSyncManifestForCurrentUser: no dbAccounts provided, skipping Partitions scan');
+  }
 
   // config.json（本地会被写入/更新，纳入变更检测）
   const configStat = await fs.stat(configPath).catch(() => null);
@@ -139,12 +214,18 @@ async function computeLocalSyncManifestForCurrentUser() {
   };
 }
 
-async function getSyncChangeSetForCurrentUser() {
+async function getSyncChangeSetForCurrentUser(dbAccounts, targetPartitions = null) {
   const manifestPath = getSyncManifestPathForUser(currentUser?.id);
-  const next = await computeLocalSyncManifestForCurrentUser();
+  
+  let prev = null;
+  if (manifestPath) {
+    prev = await fs.readFile(manifestPath, 'utf-8').then(JSON.parse).catch(() => null);
+  }
+  const prevEntries = prev?.entries || null;
+
+  const next = await computeLocalSyncManifestForCurrentUser(dbAccounts, targetPartitions, prevEntries);
   if (!manifestPath || !next) return { hasChanges: false, changedPartitions: new Set(), configChanged: false };
 
-  const prev = await fs.readFile(manifestPath, 'utf-8').then(JSON.parse).catch(() => null);
   if (!prev?.entries) {
     // 首次运行：认为需要同步（但仍走增量上传）
     const all = new Set();
@@ -153,7 +234,7 @@ async function getSyncChangeSetForCurrentUser() {
       if (m) all.add(m[1]);
     }
     const configChanged = !!next.entries['config.json'];
-    return { hasChanges: true, changedPartitions: all, configChanged };
+    return { hasChanges: true, changedPartitions: all, configChanged, nextManifest: next, manifestPath };
   }
 
   const changedPartitions = new Set();
@@ -186,9 +267,12 @@ async function persistSyncManifestForCurrentUser(nextManifest, manifestPath) {
   }
 }
 
-function markAccountsChanged(reason) {
+function markAccountsChanged(reason, partition = null) {
   accountsChangedDuringSession = true;
-  logger.debug('Sync', `Accounts changed: ${reason || 'unknown'}`);
+  if (partition) {
+    dirtyPartitions.add(partition);
+  }
+  logger.debug('Sync', `Accounts changed: ${reason || 'unknown'}${partition ? ` (partition: ${partition})` : ''}`);
 }
 
 // 常量配置
@@ -201,6 +285,8 @@ const ADJUST_BOUNDS_DELAY = 100;
 // Instagram 遮罩顯示時長（用來覆蓋 Instagram 內部導航欄在載入/縮放時的閃現）
 // 稍微拉長一點時間，確保在版面完全穩定前都由遮罩擋住
 const INSTAGRAM_MASK_DURATION_MS = 5000;
+// 是否在 Instagram 嵌入式页面隐藏侧边栏（手动开关）
+const HIDE_INSTAGRAM_SIDEBAR = false;
 
 // 缩放配置
 const ZOOM_MIN = 0.5;
@@ -242,6 +328,11 @@ const INSTAGRAM_SIDEBAR_HIDE_CSS = `
  */
 function injectInstagramSidebarHide(webContents) {
   if (!webContents || webContents.isDestroyed()) return;
+
+  if (!HIDE_INSTAGRAM_SIDEBAR) {
+    logger.debug('Main', 'Instagram sidebar hiding is disabled via HIDE_INSTAGRAM_SIDEBAR');
+    return;
+  }
 
   // 兼容旧版 class 的纯 CSS 隐藏
   webContents.insertCSS(INSTAGRAM_SIDEBAR_HIDE_CSS).catch?.(() => { });
@@ -490,6 +581,8 @@ function ensureInstagramMaskView() {
     instagramMaskView.setBackgroundColor('#ffffff');
   } catch { }
 
+  const loadingText = getLoadingText(currentLanguage);
+
   const html = `<!doctype html>
   <html>
     <head>
@@ -507,7 +600,7 @@ function ensureInstagramMaskView() {
     <body>
       <div class="wrap">
         <div class="spinner"></div>
-        <div class="tip">加载中…</div>
+        <div class="tip">${loadingText}</div>
       </div>
     </body>
   </html>`;
@@ -599,6 +692,114 @@ function hideInstagramMask() {
     if (isMaskAttached()) {
       mainWindow.removeBrowserView(instagramMaskView);
     }
+  } catch { }
+}
+
+function ensureShutdownView() {
+  if (shutdownView && !shutdownView.webContents?.isDestroyed?.()) {
+    return shutdownView;
+  }
+
+  shutdownView = new BrowserView({
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      devTools: false
+    }
+  });
+
+  try {
+    shutdownView.setBackgroundColor('#00000000'); // Transparent background
+  } catch { }
+
+  shutdownView.webContents.loadFile(path.join(__dirname, '../view/main/shutdown.html')).catch(() => { });
+
+  return shutdownView;
+}
+
+function showShutdownView() {
+  if (!mainWindow) return;
+  ensureShutdownView();
+  try {
+    mainWindow.addBrowserView(shutdownView);
+    mainWindow.setTopBrowserView(shutdownView);
+    adjustShutdownViewBounds();
+  } catch { }
+}
+
+function hideShutdownView() {
+  if (!mainWindow || !shutdownView) return;
+  try {
+    mainWindow.removeBrowserView(shutdownView);
+  } catch { }
+}
+
+function adjustShutdownViewBounds() {
+  if (!mainWindow || !shutdownView || shutdownView.webContents.isDestroyed()) return;
+  try {
+    const [width, height] = mainWindow.getSize();
+    shutdownView.setBounds({ x: 0, y: 0, width, height });
+  } catch { }
+}
+
+// --- System Overlay View Logic (Universal Top Layer) ---
+
+function ensureSystemOverlayView() {
+  if (systemOverlayView && !systemOverlayView.webContents?.isDestroyed?.()) {
+    return systemOverlayView;
+  }
+
+  systemOverlayView = new BrowserView({
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      devTools: false
+    }
+  });
+
+  try {
+    systemOverlayView.setBackgroundColor('#00000000'); // Transparent
+  } catch { }
+
+  systemOverlayView.webContents.loadFile(path.join(__dirname, '../view/main/system_overlay.html')).catch(() => { });
+
+  return systemOverlayView;
+}
+
+function showSystemOverlay(options) {
+  if (!mainWindow) return;
+  ensureSystemOverlayView();
+  try {
+    const views = mainWindow.getBrowserViews();
+    if (!views.includes(systemOverlayView)) {
+      mainWindow.addBrowserView(systemOverlayView);
+    }
+    mainWindow.setTopBrowserView(systemOverlayView);
+    // Wait for load if necessary, but usually it's preloaded or fast
+    systemOverlayView.webContents.send('show-system-overlay', options);
+    adjustSystemOverlayBounds();
+  } catch (error) {
+    logger.error('Overlay', 'Error showing system overlay', error);
+  }
+}
+
+function hideSystemOverlay() {
+  if (!mainWindow || !systemOverlayView) return;
+  try {
+    systemOverlayView.webContents.send('hide-system-overlay');
+    mainWindow.removeBrowserView(systemOverlayView);
+  } catch (error) {
+    logger.error('Overlay', 'Error hiding system overlay', error);
+  }
+}
+
+function adjustSystemOverlayBounds() {
+  if (!mainWindow || !systemOverlayView || systemOverlayView.webContents.isDestroyed()) return;
+  try {
+    const [width, height] = mainWindow.getSize();
+    systemOverlayView.setBounds({ x: 0, y: 0, width, height });
   } catch { }
 }
 
@@ -755,7 +956,7 @@ async function syncSessionsDownForCurrentUser() {
 
         // 下载账号的完整 partition 内容
         // GitHub: users/{userId}/Partitions/ (整个文件夹)
-        // 本地: C:\Users\Administrator\AppData\Roaming\crm-multi-account\Partitions\ (整个文件夹)
+        // 本地: C:\Users\Administrator\AppData\Roaming\all-in-one\Partitions\ (整个文件夹)
         // 会将 GitHub 上的 partition 文件夹完整下载到本地 Partitions 目录下
         try {
           await fs.mkdir(localPartitionPath, { recursive: true });
@@ -864,8 +1065,13 @@ function startBackgroundSyncDown() {
  * 將當前裝置的瀏覽器會話資料上傳到 GitHub
  * 增量同步：只上传新增账号，只删除已删除账号
  */
-async function syncSessionsUpForCurrentUser() {
+async function syncSessionsUpForCurrentUser(targetPartitions = null) {
+  if (syncInProgress) {
+    logger.debug('SyncUp', 'Sync already in progress, skipping duplicate call');
+    return;
+  }
   try {
+    syncInProgress = true;
     if (!canSyncSessions()) {
       logger.debug('SyncUp', 'Session sync skipped: sync disabled or not logged in');
       return;
@@ -880,13 +1086,6 @@ async function syncSessionsUpForCurrentUser() {
     const { configPath, partitionsPath } = getUserDataPaths();
     logger.info('SyncUp', `Starting sync for user ${currentUser.id}`);
 
-    const changeSet = await getSyncChangeSetForCurrentUser();
-    const needsSync = accountsChangedDuringSession || changeSet.hasChanges;
-    if (!needsSync) {
-      logger.info('SyncUp', 'No local session changes detected, skipping upload');
-      return;
-    }
-
     let dbAccounts = [];
     try {
       dbAccounts = await getAccountsByUserId(currentUser.id);
@@ -894,6 +1093,13 @@ async function syncSessionsUpForCurrentUser() {
     } catch (e) {
       logger.error('SyncUp', 'Failed to get accounts from database', e);
       throw e;
+    }
+
+    const changeSet = await getSyncChangeSetForCurrentUser(dbAccounts, targetPartitions);
+    const needsSync = accountsChangedDuringSession || changeSet.hasChanges;
+    if (!needsSync) {
+      logger.info('SyncUp', 'No local session changes detected, skipping upload');
+      return;
     }
 
     // 2. 上传全局 config.json 并更新本地 config.json
@@ -1029,8 +1235,7 @@ async function syncSessionsUpForCurrentUser() {
           if (!stat || !stat.isDirectory()) continue;
           await ghUploadDirectory(localPartitionPath, remotePartitionPath, `Sync partition for account ${partition}`, {
             skipUnchanged: true,
-            maxFileSizeBytes: 10 * 1024 * 1024,
-            concurrency: 6
+            maxFileSizeBytes: 10 * 1024 * 1024
           });
           logger.info('SyncUp', `Successfully uploaded changed partition for ${partition}`);
         } catch (e) {
@@ -1040,13 +1245,24 @@ async function syncSessionsUpForCurrentUser() {
     }
 
     logger.info('SyncUp', `Session sync finished for user: ${currentUser.id}`);
-    // 只有在一次同步流程结束后才更新 manifest（避免无变化时也刷新）
     if (changeSet?.nextManifest && changeSet?.manifestPath) {
       await persistSyncManifestForCurrentUser(changeSet.nextManifest, changeSet.manifestPath);
     }
-    accountsChangedDuringSession = false;
+    if (targetPartitions) {
+      for (const p of targetPartitions) {
+        dirtyPartitions.delete(p);
+      }
+      if (dirtyPartitions.size === 0) {
+        accountsChangedDuringSession = false;
+      }
+    } else {
+      dirtyPartitions.clear();
+      accountsChangedDuringSession = false;
+    }
   } catch (error) {
     logger.error('SyncUp', 'Sync error', error);
+  } finally {
+    syncInProgress = false;
   }
 }
 
@@ -1134,6 +1350,7 @@ function getUrlByPlatform(platform) {
  */
 function createMainWindow() {
   mainWindow = new BrowserWindow({
+    icon: path.join(__dirname, '../assets/images/icon.png'),
     width: 1400,
     height: 900,
     title: '多平台會話管理',
@@ -1148,6 +1365,9 @@ function createMainWindow() {
 
   mainWindow.loadFile('index.html');
   mainWindow.setMenuBarVisibility(false);
+
+  // Eager load the top-level system overlay so when requested immediately, it's ready.
+  ensureSystemOverlayView();
 
   // 整頁縮放：主窗口（側邊欄、頂欄、底欄）與內嵌頁使用同一比例
   mainWindow.webContents.once('did-finish-load', () => {
@@ -1164,7 +1384,12 @@ function createMainWindow() {
   });
 
   mainWindow.on('close', async (event) => {
-    if (isForceQuit) return;
+    if (isForceQuit || isQuitting) {
+      // If we are already quitting (e.g. background sync is happening), just prevent window from closing, 
+      // the exit process is already in motion.
+      event.preventDefault();
+      return;
+    }
     event.preventDefault();
 
     if (!mainWindow.webContents || mainWindow.webContents.isDestroyed()) {
@@ -1176,17 +1401,31 @@ function createMainWindow() {
       return;
     }
 
+    // Show the shutdown confirmation using a top-level BrowserView
     const response = await new Promise(resolve => {
-      ipcMain.once('shutdown-confirm-response', (e, res) => resolve(res));
-      mainWindow.webContents.send('show-shutdown-confirm');
+      shutdownResolve = resolve;
+      showShutdownView();
     });
 
+    hideShutdownView();
+
     if (response === 1) {
-      isForceQuit = true;
-      mainWindow.destroy();
+      // ** DO NOT DESTROY MAIN WINDOW HERE **
+      // We want the window to remain open so it can display the 'Uploading your data...' overlay 
+      // during the app.on('before-quit') phase.
       if (process.platform !== 'darwin') {
         app.quit();
+      } else {
+        // Force quit on MacOS if they explicitly hit close and confirmed shutdown
+        app.quit();
       }
+    }
+  });
+
+  ipcMain.on('shutdown-confirm-response', (event, response) => {
+    if (shutdownResolve) {
+      shutdownResolve(response);
+      shutdownResolve = null;
     }
   });
 
@@ -1502,6 +1741,22 @@ function createBrowserView(partition) {
     }
   });
 
+  webContents.on('did-navigate', (event, url) => {
+    markAccountsChanged('navigation', partition);
+  });
+
+  webContents.on('did-navigate-in-page', (event, url) => {
+    markAccountsChanged('navigation-in-page', partition);
+  });
+
+  try {
+    webContents.session.cookies.on('changed', () => {
+      markAccountsChanged('cookie-changed', partition);
+    });
+  } catch (err) {
+    logger.error('Account', 'Could not attach cookie listener', err);
+  }
+
   webContents.loadURL(targetUrl);
   return view;
 }
@@ -1631,6 +1886,19 @@ function sanitizePhoneNumber(phoneNumber) {
 }
 
 /**
+ * 清理字串以便用於 partition 關鍵字（只保留小寫字母、數字和連字元）
+ */
+function sanitizeForPartition(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str.toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')           // 空格轉連字元
+    .replace(/[^a-z0-9-]/g, '')     // 移除其他特殊字元
+    .replace(/-+/g, '-')            // 多個連字元轉單個
+    .replace(/^-+|-+$/g, '');       // 移除首尾連字元
+}
+
+/**
  * 生成唯一的账户名称
  * @param {string} platform - 平台名称
  * @param {string} phoneSuffix - 手机号后4位
@@ -1658,42 +1926,79 @@ function generateUniqueAccountName(platform, phoneSuffix, existingAccounts) {
  * @param {string} phoneNumber - 手机号
  * @returns {Promise<string>} 账户分区标识
  */
-async function createNewAccount(platform = 'whatsapp', phoneNumber = '') {
+async function createNewAccount(platform = 'whatsapp', identifier = '', name = '') {
   try {
     if (!currentUser) {
       throw new Error('尚未登入，無法建立帳戶');
     }
 
     const safePlatform = (platform || 'whatsapp').toLowerCase();
+    const trimmedName = (name || '').trim();
 
-    // 验证手机号
-    if (!phoneNumber || !validatePhoneNumber(phoneNumber)) {
-      throw new Error('請輸入有效的手機號碼（8-15位數字）');
+    if (!trimmedName) {
+      throw new Error('帳戶名稱為必填項');
     }
 
-    const cleanedPhone = sanitizePhoneNumber(phoneNumber);
-    const partition = `${safePlatform}-${cleanedPhone}`;
-
-    // 检查该手机号是否已存在（同一平台 + 同一使用者）
-    const exists = await accountExists(currentUser.id, safePlatform, cleanedPhone);
-    if (exists) {
-      throw new Error(`該平台下手機號碼 ${cleanedPhone} 已存在`);
-    }
-
-    // 生成唯一的账户名称（基於目前快取）
-    const phoneSuffix = cleanedPhone.slice(-4);
-    const accountName = generateUniqueAccountName(
-      safePlatform,
-      phoneSuffix,
-      accountsCache
+    // 检查名称是否在同一平台下重复
+    const nameExists = accountsCache.some(acc => 
+      acc.name === trimmedName && acc.platform === safePlatform
     );
+    if (nameExists) {
+      throw new Error(`該平台下帳戶名稱 "${trimmedName}" 已存在`);
+    }
+
+    let cleanedIdentifier = '';
+    let partitionSuffix = '';
+
+    if (identifier) {
+      // 如果提供了标识符，根据平台进行处理/验证
+      const isPhonePlatform = ['whatsapp', 'telegram'].includes(safePlatform);
+      if (isPhonePlatform) {
+        if (!validatePhoneNumber(identifier)) {
+          throw new Error('請輸入有效的手機號碼（8-15位數字）');
+        }
+        cleanedIdentifier = sanitizePhoneNumber(identifier);
+        
+        // 检查该手机号是否已存在
+        const exists = await accountExists(currentUser.id, safePlatform, cleanedIdentifier);
+        if (exists) {
+          throw new Error(`該平台下手機號碼 ${cleanedIdentifier} 已存在`);
+        }
+        partitionSuffix = cleanedIdentifier;
+      } else {
+        // Instagram/Messenger username
+        cleanedIdentifier = identifier.trim();
+        // 也可以加一个重名检查（如果 DB 支持）
+        const exists = await accountExists(currentUser.id, safePlatform, cleanedIdentifier);
+        if (exists) {
+          throw new Error(`該平台下用戶名 ${cleanedIdentifier} 已存在`);
+        }
+        partitionSuffix = cleanedIdentifier;
+      }
+    }
+
+    // 生成基於 使用者-平台-帳戶名 的 partition key
+    const safeUser = sanitizeForPartition(currentUser.username);
+    const safePlatformShort = safePlatform.replace(/[^a-z0-9]/g, ''); // 平台名通常是英文字母
+    const safeAccountName = sanitizeForPartition(trimmedName);
+    
+    // 基本格式为: username-platform-accountname
+    let partition = `${safeUser}-${safePlatformShort}-${safeAccountName}`;
+
+    // 安全检查：如果这个 partition 已经存在（虽然理论上 name 已被 uniqueness 检查过滤，但 sanitize 可能导致碰撞）
+    // 检查 accountsCache
+    const partitionExists = accountsCache.some(acc => acc.partition === partition);
+    if (partitionExists) {
+      // 如果碰撞，加上短時間戳確保絕對唯一
+      partition = `${partition}-${Date.now().toString().slice(-4)}`;
+    }
 
     // 寫入 DB
     const created = await createAccount(
       currentUser.id,
       safePlatform,
-      cleanedPhone,
-      accountName,
+      cleanedIdentifier,
+      trimmedName,
       partition
     );
 
@@ -1713,6 +2018,13 @@ async function createNewAccount(platform = 'whatsapp', phoneNumber = '') {
     markAccountsChanged('create-account');
 
     sendToRenderer('accounts-updated', accountsCache);
+
+    // Immediate sync per requirement: wait for GitHub push before proceeding
+    try {
+      await syncSessionsUpForCurrentUser(new Set([partition]));
+    } catch (e) {
+      logger.error('Account', 'Immediate sync failed after creation', e);
+    }
 
     switchToAccount(partition);
     return partition;
@@ -1783,7 +2095,7 @@ function resumeAccount(partition) {
 /**
  * 重命名账户
  */
-async function renameAccount(partition, newName) {
+async function renameAccount(partition, newName, newIdentifier = '') {
   try {
     if (!newName || typeof newName !== 'string' || newName.trim().length === 0) {
       throw new Error('帳戶名稱不能為空');
@@ -1800,28 +2112,58 @@ async function renameAccount(partition, newName) {
     }
 
     const currentAccount = accountsCache[accountIndex];
-    const currentPlatform = currentAccount.platform || 'whatsapp';
+    const currentPlatform = (currentAccount.platform || 'whatsapp').toLowerCase();
+    const trimmedIdentifier = (newIdentifier || '').trim();
 
-    // 检查名称是否与同一平台下的其他账户重复
-    const duplicateAccount = accountsCache.find(
+    // 1. 检查名称是否与同一平台下的其他账户重复
+    const nameDuplicate = accountsCache.some(
       (acc, index) =>
         acc.name === trimmedName &&
         index !== accountIndex &&
-        (acc.platform || 'whatsapp') === currentPlatform
+        (acc.platform || 'whatsapp').toLowerCase() === currentPlatform
     );
-    if (duplicateAccount) {
+    if (nameDuplicate) {
       throw new Error(`該平台下帳戶名稱 "${trimmedName}" 已存在`);
     }
 
-    // 更新 DB
-    const updated = await dbRenameAccount(currentUser.id, partition, trimmedName);
+    // 2. 如果标识符有变化，检查是否与其他账户重复
+    let cleanedIdentifier = trimmedIdentifier;
+    if (trimmedIdentifier && trimmedIdentifier !== currentAccount.phoneNumber) {
+      const isPhonePlatform = ['whatsapp', 'telegram'].includes(currentPlatform);
+      if (isPhonePlatform) {
+        if (!validatePhoneNumber(trimmedIdentifier)) {
+          throw new Error('請輸入有效的手機號碼（8-15位數字）');
+        }
+        cleanedIdentifier = sanitizePhoneNumber(trimmedIdentifier);
+      }
+
+      const idExists = await accountExists(currentUser.id, currentPlatform, cleanedIdentifier);
+      // 这里的 accountExists 内部调用了 DB。由于我们还没更新 DB，如果 identifier 变化，
+      // 我们需要确保没有其他人占用这个新 identifier。
+      if (idExists) {
+        const errorLabel = isPhonePlatform ? '手機號碼' : '用戶名';
+        throw new Error(`該平台下${errorLabel} ${cleanedIdentifier} 已存在`);
+      }
+    }
+
+    // 更新 DB (不涉及 partition_key 变更)
+    const updated = await dbUpdateAccount(currentUser.id, partition, trimmedName, cleanedIdentifier);
     if (!updated) {
       throw new Error('帳戶不存在或更新失敗');
     }
 
     // 更新快取
     accountsCache[accountIndex].name = trimmedName;
+    accountsCache[accountIndex].phoneNumber = cleanedIdentifier;
     sendToRenderer('accounts-updated', accountsCache);
+
+    // Immediate sync per requirement
+    try {
+      await syncSessionsUpForCurrentUser(new Set([partition]));
+    } catch (e) {
+      logger.error('Account', 'Immediate sync failed after rename', e);
+    }
+
     return accountsCache;
   } catch (error) {
     logger.error('Account', 'Error renaming account', error);
@@ -1861,9 +2203,17 @@ async function deleteAccount(partition) {
     // 更新快取
     accountsCache = accountsCache.filter(acc => acc.partition !== partition);
     // Mark sync-needed per requirement (only when new/delete account happens)
-    markAccountsChanged('delete-account');
+    markAccountsChanged('delete-account', partition);
 
     sendToRenderer('accounts-updated', accountsCache);
+
+    // Immediate sync per requirement
+    try {
+      await syncSessionsUpForCurrentUser(new Set([partition]));
+    } catch (e) {
+      logger.error('Account', 'Immediate sync failed after deletion', e);
+    }
+
     return accountsCache;
   } catch (error) {
     logger.error('Account', 'Error deleting account', error);
@@ -1874,6 +2224,20 @@ async function deleteAccount(partition) {
 // IPC 处理
 ipcMain.handle('get-accounts', () => {
   return loadAccountsForCurrentUser();
+});
+
+ipcMain.handle('get-carousel-images', async () => {
+  try {
+    const carouselDir = path.join(__dirname, '..', 'assets', 'images', 'carousel');
+    const files = await fs.readdir(carouselDir);
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+    return files
+      .filter(file => validExtensions.includes(path.extname(file).toLowerCase()))
+      .map(file => `assets/images/carousel/${file}`);
+  } catch (error) {
+    logger.error('Carousel', 'Error reading carousel directory', error);
+    return [];
+  }
 });
 
 // 渲染进程通知面板宽度已变更 → 立即重新对齐 BrowserView 边界
@@ -1894,11 +2258,12 @@ ipcMain.handle('remove-account', async (event, partition) => {
   return await deleteAccount(partition);
 });
 
-ipcMain.handle('rename-account', (event, partition, newName) => {
+ipcMain.handle('rename-account', async (event, partition, newName, newIdentifier) => {
   try {
-    return renameAccount(partition, newName);
+    await renameAccount(partition, newName, newIdentifier);
+    return { success: true };
   } catch (error) {
-    throw error;
+    return { success: false, message: error.message || '更新失敗' };
   }
 });
 
@@ -1911,11 +2276,13 @@ ipcMain.on('switch-account', (event, partition) => {
   switchToAccount(partition);
 });
 
-ipcMain.on('create-new-account', (event, platform, phoneNumber) => {
-  createNewAccount(platform, phoneNumber).catch((error) => {
-    // 发送错误消息到渲染进程
-    sendToRenderer('account-create-error', error.message || '建立帳戶失敗');
-  });
+ipcMain.handle('create-new-account', async (event, platform, identifier, name) => {
+  try {
+    await createNewAccount(platform, identifier, name);
+    return { success: true, accounts: accountsCache };
+  } catch (error) {
+    return { success: false, message: error.message || '建立帳戶失敗' };
+  }
 });
 
 ipcMain.on('refresh-account', (event, partition) => {
@@ -1951,6 +2318,21 @@ ipcMain.on('hide-browser-view', () => {
   }
   // 对话框出现时也把遮罩移除，避免残留
   hideInstagramMask();
+  hideSystemOverlay();
+});
+
+ipcMain.on('show-system-overlay', (event, options) => {
+  showSystemOverlay(options || {});
+});
+
+ipcMain.on('hide-system-overlay', () => {
+  hideSystemOverlay();
+});
+
+ipcMain.on('system-overlay-response', (event, result) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('system-overlay-response', result);
+  }
 });
 
 ipcMain.on('show-browser-view', () => {
@@ -1968,6 +2350,18 @@ ipcMain.on('resume-account', (event, partition) => {
   resumeAccount(partition);
 });
 
+ipcMain.on('set-language', (event, lang) => {
+  if (lang && typeof lang === 'string') {
+    currentLanguage = lang;
+    store.set('all-in-one-language', lang);
+    // 如果遮罩正在顯示，重置它以便下次使用新语言 (或者直接銷毀讓它下次重建)
+    if (instagramMaskView) {
+      instagramMaskView.webContents.destroy();
+      instagramMaskView = null;
+    }
+  }
+});
+
 ipcMain.on('legal-dialog-closed', (event, requestId) => {
   try {
     const resolver = legalDialogWaiters.get(requestId);
@@ -1980,7 +2374,7 @@ ipcMain.handle('login', async (event, payload) => {
   try {
     const { username, password } = payload || {};
     if (!username || !password) {
-      return { success: false, message: '請輸入帳號與密碼' };
+      return { success: false, message: 'loginErrEmpty' };
     }
 
     const trimmedUsername = String(username).trim();
@@ -1992,13 +2386,13 @@ ipcMain.handle('login', async (event, payload) => {
     const user = await findUserByUsername(trimmedUsername);
 
     if (!user) {
-      return { success: false, message: '帳號或密碼錯誤' };
+      return { success: false, message: 'loginErrFailed' };
     }
 
     // 已存在：校驗密碼
     const ok = await verifyPassword(plainPassword, user.password_hash);
     if (!ok) {
-      return { success: false, message: '帳號或密碼錯誤' };
+      return { success: false, message: 'loginErrFailed' };
     }
 
     currentUser = {
@@ -2008,6 +2402,7 @@ ipcMain.handle('login', async (event, payload) => {
 
     // 登入成功後：立即返回并进入主界面；GitHub 下行同步放后台执行
     startBackgroundSyncDown();
+    startPeriodicBackgroundSync();
     await loadAccountsForCurrentUser();
 
     return {
@@ -2017,7 +2412,61 @@ ipcMain.handle('login', async (event, payload) => {
     };
   } catch (error) {
     logger.error('Auth', 'Login error', error);
-    return { success: false, message: '登入失敗，請聯繫管理員或稍後再試' };
+    return { success: false, message: 'loginErrRetry' };
+  }
+});
+
+// 登出：執行同步後清除當前使用者狀態，並關閉所有視圖
+ipcMain.handle('logout', async () => {
+  if (!currentUser) return { success: true };
+
+  logger.info('Auth', `Logging out user: ${currentUser.id}`);
+  
+  try {
+    // 1. 停止所有消息檢查與背景同步
+    messageChecker.stopAllMessageChecks();
+    stopPeriodicBackgroundSync();
+
+    // 2. 如果已有同步在進行中，等待它完成
+    if (syncInProgress) {
+      logger.info('Auth', 'Sync already in progress, waiting for it to complete...');
+      // Show top-level overlay immediately so user sees it in front of everything
+      showSystemOverlay({ type: 'loading', text: getSavingText(currentLanguage) });
+      while (syncInProgress) {
+        await delay(1000);
+      }
+    } else {
+      // 否則，執行強制同步
+      showSystemOverlay({ type: 'loading', text: getSavingText(currentLanguage) });
+      await syncSessionsUpForCurrentUser(new Set(dirtyPartitions));
+    }
+
+    // 3. 清除狀態
+    currentUser = null;
+    accountsCache = [];
+    
+    // 4. 銷毀所有 BrowserViews 和 遮罩
+    hideInstagramMask();
+    
+    for (const [partition, view] of browserViews.entries()) {
+      try {
+        if (mainWindow) mainWindow.removeBrowserView(view);
+        view.webContents.destroy();
+      } catch { }
+    }
+    browserViews.clear();
+    currentView = null;
+    instagramInitialMaskShown.clear(); // 清空遮罩紀錄，下次登入又是全新的
+
+    hideSystemOverlay(); // Hide the top-level loading overlay
+    logger.info('Auth', 'Logout successful');
+    return { success: true };
+  } catch (error) {
+    logger.error('Auth', 'Logout error during sync', error);
+    // 即使同步失敗，也建議繼續清除本地狀態，避免卡住
+    currentUser = null;
+    accountsCache = [];
+    return { success: false, error: error.message };
   }
 });
 
@@ -2033,12 +2482,27 @@ ipcMain.handle('register', async (event, payload) => {
     const trimmedEmail = String(email).trim();
     const trimmedFullName = String(fullName).trim();
 
+    // Server-side password strength check
+    const isStrongPassword = (pw) => {
+      return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(pw);
+    };
+
+    if (!isStrongPassword(password)) {
+      return { success: false, message: 'registerErrPasswordWeak' };
+    }
+
     await initDatabase();
 
     // Check if username already exists
     const existing = await findUserByUsername(trimmedUsername);
     if (existing) {
-      return { success: false, message: '帳號已存在，請使用其他帳號名稱' };
+      return { success: false, message: 'registerErrDuplicateUsername' };
+    }
+
+    // Check if email already exists
+    const existingEmail = await getUserByEmail(trimmedEmail);
+    if (existingEmail) {
+      return { success: false, message: 'registerErrDuplicateEmail' };
     }
 
     const newUser = await createUser(trimmedUsername, trimmedEmail, trimmedFullName, password);
@@ -2270,6 +2734,11 @@ app.on('before-quit', async (event) => {
   if (currentUser) {
     event.preventDefault();
     logger.info('Quit', `Syncing sessions for user: ${currentUser.id}`);
+    stopPeriodicBackgroundSync();
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      showSystemOverlay({ type: 'loading', text: getSavingText(currentLanguage) });
+    }
 
     try {
       globalShortcut.unregisterAll();
@@ -2277,19 +2746,17 @@ app.on('before-quit', async (event) => {
 
       syncInProgress = true;
 
-      const syncPromise = syncSessionsUpForCurrentUser()
+      const syncPromise = syncSessionsUpForCurrentUser(new Set(dirtyPartitions))
         .then(() => {
-          syncInProgress = false;
           return 'completed';
         })
         .catch((err) => {
           logger.error('Quit', 'Sync promise rejected', err);
-          syncInProgress = false;
           return 'error';
         });
 
-      const timeoutPromise = delay(120000).then(() => {
-        logger.warn('Quit', 'Session sync timeout after 120 seconds, forcing exit');
+      const timeoutPromise = delay(300000).then(() => {
+        logger.warn('Quit', 'Session sync timeout after 300 seconds, forcing exit');
         syncInProgress = false;
         return 'timeout';
       });
@@ -2336,4 +2803,8 @@ app.on('before-quit', async (event) => {
   setTimeout(() => {
     app.exit(0);
   }, 100);
+});
+ipcMain.on('quit-app', () => {
+  isForceQuit = true;
+  app.quit();
 });

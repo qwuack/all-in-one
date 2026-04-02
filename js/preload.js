@@ -25,8 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   switchAccount: (partition) => {
     ipcRenderer.send('switch-account', partition);
   },
-  createNewAccount: (platform, phoneNumber) => {
-    ipcRenderer.send('create-new-account', platform, phoneNumber);
+  createNewAccount: (platform, identifier, name) => {
+    return ipcRenderer.invoke('create-new-account', platform, identifier, name);
   },
   getAccounts: () => {
     return ipcRenderer.invoke('get-accounts');
@@ -34,8 +34,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeAccount: (partition) => {
     return ipcRenderer.invoke('remove-account', partition);
   },
-  renameAccount: (partition, newName) => {
-    return ipcRenderer.invoke('rename-account', partition, newName);
+  renameAccount: (partition, newName, newIdentifier) => {
+    return ipcRenderer.invoke('rename-account', partition, newName, newIdentifier);
   },
   refreshAccount: (partition) => {
     ipcRenderer.send('refresh-account', partition);
@@ -158,5 +158,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   sendShutdownConfirmResponse: (response) => {
     ipcRenderer.send('shutdown-confirm-response', response);
-  }
+  },
+  quitApp: () => {
+    ipcRenderer.send('quit-app');
+  },
+  getCarouselImages: () => {
+    return ipcRenderer.invoke('get-carousel-images');
+  },
+  // 登出
+  logout: () => {
+    return ipcRenderer.invoke('logout');
+  },
+  // 语言
+  setLanguage: (lang) => ipcRenderer.send('set-language', lang),
+  
+  // System Overlay
+  showSystemOverlay: (options) => ipcRenderer.send('show-system-overlay', options),
+  hideSystemOverlay: () => ipcRenderer.send('hide-system-overlay'),
+  onShowSystemOverlay: (callback) => ipcRenderer.on('show-system-overlay', (event, options) => callback(options)),
+  onHideSystemOverlay: (callback) => ipcRenderer.on('hide-system-overlay', () => callback()),
+  sendSystemOverlayResponse: (result) => ipcRenderer.send('system-overlay-response', result),
+  onSystemOverlayResponse: (callback) => ipcRenderer.once('system-overlay-response', (event, result) => callback(result))
 });

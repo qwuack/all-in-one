@@ -4,21 +4,22 @@
  * Default: English
  */
 
-const I18N_STORAGE_KEY = 'csai-crm-language';
+const I18N_STORAGE_KEY = 'all-in-one-language';
 
 const translations = {
   en: {
     // App branding
-    appSubtitle: 'Multi-Platform Chat Manager',
+    appSubtitle: 'Multi Social Communication Hub',
 
     // Login screen
-    loginTitle: 'CS AI CRM',
-    loginSubtitle: 'Multi-Platform Chat Manager',
+    logoTitle: 'LL in ONE',
+    slogan: 'Multi Social Communication Hub',
     loginUsernameLabel: 'Username',
     loginUsernamePlaceholder: 'Enter username',
     loginPasswordLabel: 'Password',
     loginPasswordPlaceholder: 'Enter password',
     loginBtn: 'Sign In',
+    backToLogin: 'Back to Login',
 
     // Register
     registerTitle: 'Create Account',
@@ -38,17 +39,19 @@ const translations = {
     registerLoginLink: 'Sign In',
     registerErrEmpty: 'Please fill in all fields',
     registerErrEmail: 'Please enter a valid email address',
-    registerErrMismatch: 'Passwords do not match',
+    registerErrMismatch: 'Passwords does not match',
+    registerPasswordHint: 'Password Requirements:<br/>• Minimum 8 characters<br/>• At least one uppercase & one lowercase letter<br/>• At least one numeric digit<br/>• At least one special character',
+    registerErrPasswordWeak: 'Password is too weak. It must be at least 8 characters long and include uppercase, lowercase, numbers, and symbols.',
     registerSuccess: 'Account created successfully',
 
     // Forgot password
     forgotTitle: 'Forgot Password',
-    forgotSubtitle: 'Reset your account password',
+    forgotSubtitle: 'Enter your email to reset your password',
     forgotEmailLabel: 'Email',
     forgotEmailPlaceholder: 'Enter email address',
     forgotSubmitBtn: 'Reset Password',
     forgotErrEmpty: 'Please fill in all fields',
-    forgotErrMismatch: 'Passwords do not match',
+    forgotErrMismatch: 'Passwords does not match',
     forgotErrIncorrect: 'Old password is incorrect',
     forgotSuccess: 'Password reset successfully',
 
@@ -59,6 +62,8 @@ const translations = {
     searchPlaceholder: 'Search accounts...',
     searchAria: 'Search Accounts',
     accountsListHeader: 'Account List',
+    logoutTitle: 'Logout',
+    logoutAria: 'Logout',
 
     // Header / main
     selectAccount: 'Select an Account',
@@ -70,9 +75,9 @@ const translations = {
     zoomResetAria: 'Reset Zoom',
 
     // Welcome screen
-    welcomeTitle: 'Welcome to CSAI-CRM',
+    welcomeTitle: 'Welcome to ALL in ONE',
     welcomeDescription: 'Manage customer conversations across multiple social platforms',
-    welcomeFeature1: 'Supports WhatsApp, Instagram, Messenger, WeChat Official Account',
+    welcomeFeature1: 'Supports WhatsApp, Instagram, Messenger, WeChat, Telegram Official Account',
     welcomeFeature2: 'Manage multiple accounts simultaneously',
     welcomeFeature3: 'Real-time message sync',
     welcomeGetStarted: 'Get Started',
@@ -97,6 +102,7 @@ const translations = {
 
     // Loading
     loading: 'Processing...',
+    savingData: 'Saving your data...',
 
     // Sync status
     syncReady: 'Sync: Idle',
@@ -107,8 +113,8 @@ const translations = {
     syncSyncing: 'Syncing...',
 
     // Account actions (inline)
-    renameTitle: 'Rename',
-    renameAria: 'Rename Account',
+    renameTitle: 'Edit',
+    renameAria: 'Edit Account',
     refreshTitle: 'Refresh',
     refreshAria: 'Refresh Account',
     deleteTitle: 'Delete',
@@ -118,25 +124,59 @@ const translations = {
     // Account messages
     emptyAccounts: 'No matching accounts',
     switchingAccount: 'Switching account...',
-    renamingAccount: 'Renaming...',
-    deletingAccount: 'Deleting account...',
-    creatingAccount: 'Creating account...',
+    renamingAccount: 'Renaming and syncing...',
+    deletingAccount: 'Deleting and syncing account...',
+    creatingAccount: 'Creating and syncing account...',
 
     // Modal: Rename
-    renameModalTitle: 'Rename Account',
-    renameModalDesc: 'Please enter a new account name',
+    renameModalTitle: 'Edit Account',
+    renameModalDesc: 'Please update account details',
     renameModalPlaceholder: 'Enter account name',
     renameModalErrEmpty: 'Account name cannot be empty',
     renameModalErrLong: 'Account name cannot exceed 50 characters',
 
     // Modal: Create account
-    createModalDesc: 'Enter the phone number (8–15 digits)',
-    createModalPlaceholder: 'Enter phone number (8–15 digits)',
-    createModalErrEmpty: 'Phone number cannot be empty',
-    createModalErrInvalid: 'Please enter a valid phone number (8–15 digits)',
+    createModalDesc: 'Enter account details',
+    createModalPlaceholder: 'Enter identifiers',
+    createModalErrEmpty: 'Identifier cannot be empty',
+    createModalErrInvalid: 'Please enter a valid identifier',
+    confirmTitle: 'Confirm Action',
+
+    // New keys for improved Add Account
+    accountNameLabel: 'Account Name',
+    accountNamePlaceholder: 'e.g. My Global Office',
+    instagramUsernameLabel: 'Instagram Username',
+    facebookUsernameLabel: 'Facebook Username',
+    optionalSuffix: '(optional)',
+    requiredSuffix: '(required)',
+    processing: 'Processing...',
+    savingData: 'Uploading your data...',
+    nameRequiredErr: 'Account name is required',
+    nameDuplicateErr: 'An account with this name already exists on this platform',
 
     // Delete confirm
     deleteConfirm: 'Are you sure you want to delete account "{name}"? This action cannot be undone.',
+
+    logoutConfirmTitle: 'Confirm Logout',
+    logoutConfirmMessage: 'Are you sure you want to log out?',
+
+    // Popup: Terms of Service
+    privacyAndTermsTitle: 'Privacy and Terms Confirmation',
+    privacyAndTermsDescPrefix: 'Please read the',
+    privacyAndTermsDescAnd: 'and',
+    privacyAndTermsDescSuffix: 'before using the application.',
+    agreePrivacy: 'I have read and agree to the Privacy Policy',
+    agreeTerms: 'I have read and agree to the Terms of Service',
+    privacyAndTermsAgree: 'I accept the terms',
+    privacyAndTermsView: 'View Privacy Policy and Terms of Service',
+    privacyAndTermsQuit: 'Quit Application',
+
+    // Popup: Shutdown confirm
+    shutdownConfirmTitle: 'Confirm Shutdown',
+    shutdownConfirmMessage: 'Are you sure you want to shut down the application?',
+    shutdownConfirmDesc: 'Shutting down the application will cause all accounts to go offline.',
+    shutdownConfirm: 'Confirm',
+    shutdownCancel: 'Cancel',
 
     // Errors
     errInit: 'Initialization failed: ',
@@ -160,21 +200,44 @@ const translations = {
     loginErrEmpty: 'Please enter username and password',
     loginErrFailed: 'Login failed, please check your credentials',
     loginErrRetry: 'Login failed, please try again later',
+    loggingIn: 'Signing in...',
 
     // Language switcher
     langSwitcherTitle: 'Switch Language',
+    langEN: 'English',
+    langZHCN: 'Simplified Chinese',
+    langZHTW: 'Traditional Chinese',
+    togglePasswordTitle: 'Toggle Password Visibility',
+    resizePanelTitle: 'Drag to resize panel',
+    pinAccount: 'Pin to top',
+    unpinAccount: 'Unpin',
+    accountOptions: 'Options',
+    confirmShutdown: 'Confirm',
+    cancelShutdown: 'Cancel',
+    registerErrFailed: 'Registration failed',
+    registerErrRetry: 'Registration error, please try again later',
+    registerErrDuplicateUsername: 'This username is already taken, please choose another.',
+    registerErrDuplicateEmail: 'This email is already registered, please use a different one.',
+    registerErrUsernameSameAsEmail: 'Username and email cannot be the same.',
+    forgotWait: 'Please wait, sending email...',
+    forgotErrEmail: 'Please enter a valid email address',
+    shutdownConfirmTitle: 'Confirm Shutdown',
+    shutdownConfirmMessage: 'Are you sure you want to shut down the application?',
+    shutdownConfirmDesc: 'Shutting down the application will cause all accounts to go offline.',
+    shutdownConfirmBtn: 'Confirm',
   },
 
   'zh-CN': {
-    appSubtitle: '多平台会话管理系统',
+    appSubtitle: '多平台管理系统',
 
-    loginTitle: 'CS AI CRM',
-    loginSubtitle: '多平台会话管理系统',
+    logoTitle: 'LL in ONE',
+    slogan: '多平台管理系统',
     loginUsernameLabel: '帐号',
     loginUsernamePlaceholder: '输入登录帐号',
     loginPasswordLabel: '密码',
     loginPasswordPlaceholder: '输入登录密码',
     loginBtn: '登入',
+    backToLogin: '返回登入',
 
     registerTitle: '创建账户',
     registerSubtitle: '注册新用户',
@@ -193,11 +256,13 @@ const translations = {
     registerLoginLink: '返回登入',
     registerErrEmpty: '请填写所有栏位',
     registerErrEmail: '请输入有效的邮箱地址',
-    registerErrMismatch: '两次输入的密码不一致',
+    registerErrMismatch: '密码需一致',
+    registerPasswordHint: '密码要求：<br/>• 长度至少 8 位<br/>• 包含大小写字母<br/>• 包含数字和特殊符号',
+    registerErrPasswordWeak: '密码强度不足。需至少 8 位且包含大小写字母、数字及符号。',
     registerSuccess: '账户创建成功',
 
     forgotTitle: '忘记密码',
-    forgotSubtitle: '重设您的账户密码',
+    forgotSubtitle: '输入您的邮箱以重设密码',
     forgotOldPasswordLabel: '旧密码',
     forgotOldPasswordPlaceholder: '输入旧密码',
     forgotNewPasswordLabel: '新密码',
@@ -216,6 +281,8 @@ const translations = {
     searchPlaceholder: '搜索账户...',
     searchAria: '搜索账户',
     accountsListHeader: '账户列表',
+    logoutTitle: '登出',
+    logoutAria: '登出',
 
     selectAccount: '请选择账户',
     statusReady: '就绪',
@@ -225,9 +292,9 @@ const translations = {
     zoomReset: '重置',
     zoomResetAria: '重置缩放',
 
-    welcomeTitle: '欢迎使用 CSAI-CRM',
+    welcomeTitle: '欢迎使用 ALL in ONE',
     welcomeDescription: '统一管理多个社交平台的客户对话',
-    welcomeFeature1: '支持 WhatsApp、Instagram、Messenger、WeChat Official Account',
+    welcomeFeature1: '支持 WhatsApp、Instagram、Messenger、WeChat、Telegram 官方账号',
     welcomeFeature2: '多账户并行管理',
     welcomeFeature3: '即时同步消息',
     welcomeGetStarted: '开始使用',
@@ -248,6 +315,7 @@ const translations = {
     legalZoomTitle: '缩放法律条款内容',
 
     loading: '处理中...',
+    savingData: '正在储存数据...',
 
     syncReady: '同步：待机',
     syncInProgress: '同步：进行中',
@@ -256,8 +324,8 @@ const translations = {
     syncQueued: '待同步…',
     syncSyncing: '同步中…',
 
-    renameTitle: '重新命名',
-    renameAria: '重新命名账户',
+    renameTitle: '编辑',
+    renameAria: '编辑账户',
     refreshTitle: '重新整理',
     refreshAria: '重新整理账户',
     deleteTitle: '删除',
@@ -266,22 +334,54 @@ const translations = {
 
     emptyAccounts: '暂无符合的账户',
     switchingAccount: '切换账户中...',
-    renamingAccount: '重新命名中...',
-    deletingAccount: '删除账户中...',
-    creatingAccount: '建立账户中...',
+    renamingAccount: '正在重命名并同步账户...',
+    deletingAccount: '正在删除并同步账户...',
+    creatingAccount: '正在建立并同步账户...',
 
-    renameModalTitle: '重新命名账户',
-    renameModalDesc: '请输入新的账户名称',
+    renameModalTitle: '编辑账户',
+    renameModalDesc: '请输入新的账户信息',
     renameModalPlaceholder: '请输入账户名称',
     renameModalErrEmpty: '账户名称不能为空',
     renameModalErrLong: '账户名称不能超过 50 个字元',
 
-    createModalDesc: '请输入手机号码（8-15位数字）',
-    createModalPlaceholder: '请输入手机号码（8-15位数字）',
-    createModalErrEmpty: '手机号码不能为空',
-    createModalErrInvalid: '请输入有效的手机号码（8-15位数字）',
+    createModalDesc: '输入账户详情',
+    createModalPlaceholder: '输入识别码',
+    createModalErrEmpty: '识别码不能为空',
+    createModalErrInvalid: '请输入有效的识别码',
+    confirmTitle: '确认操作',
+
+    // New keys for improved Add Account
+    accountNameLabel: '账户名称',
+    accountNamePlaceholder: '例如：我的全球办公室',
+    instagramUsernameLabel: 'Instagram 用户名',
+    facebookUsernameLabel: 'Facebook 用户名',
+    optionalSuffix: '（可选）',
+    requiredSuffix: '（必填）',
+    processing: '处理中...',
+    savingData: '正在上传您的数据...',
+    nameRequiredErr: '账户名称为必填项',
+    nameDuplicateErr: '该平台上已存在同名账户',
 
     deleteConfirm: '确定要删除账户「{name}」吗？此操作无法复原。',
+
+    logoutConfirmTitle: '确认登出',
+    logoutConfirmMessage: '您确定要登出吗？',
+
+    privacyAndTermsTitle: '隐私与条款确认',
+    privacyAndTermsDescPrefix: '在使用 ALL-in-ONE 之前，请先阅读并同意',
+    privacyAndTermsDescAnd: '和',
+    privacyAndTermsDescSuffix: '。',
+    agreePrivacy: '我已阅读并同意隐私政策',
+    agreeTerms: '我已阅读并同意服务条款',
+    privacyAndTermsAgree: '我接受条款',
+    privacyAndTermsView: '查看隐私政策和服务条款',
+    privacyAndTermsQuit: '退出应用',
+
+    shutdownConfirmTitle: '确认关闭',
+    shutdownConfirmMessage: '确定要关闭应用程序吗？',
+    shutdownConfirmDesc: '关闭应用程序将导致所有账户离线。',
+    shutdownConfirmCancel: '取消',
+    shutdownConfirmConfirm: '确认',
 
     errInit: '初始化失败: ',
     errBind: '事件绑定失败: ',
@@ -303,20 +403,43 @@ const translations = {
     loginErrEmpty: '请输入帐号与密码',
     loginErrFailed: '登入失败，请确认帐号密码',
     loginErrRetry: '登入失败，请稍后再试',
+    loggingIn: '正在登入...',
 
     langSwitcherTitle: '切换语言',
+    langEN: '英文',
+    langZHCN: '简体中文',
+    langZHTW: '繁体中文',
+    togglePasswordTitle: '切换密码可见性',
+    resizePanelTitle: '拖动以调整面板大小',
+    pinAccount: '置顶',
+    unpinAccount: '取消置顶',
+    accountOptions: '选项',
+    confirmShutdown: '确认',
+    cancelShutdown: '取消',
+    registerErrFailed: '注册失败',
+    registerErrRetry: '注册错误，请稍后再试',
+    registerErrDuplicateUsername: '此帐号已被使用，请选择其他帐号。',
+    registerErrDuplicateEmail: '此邮箱已被注册，请使用其他邮箱。',
+    registerErrUsernameSameAsEmail: '帐号与邮箱不能相同。',
+    forgotWait: '请稍候，正在发送邮件...',
+    forgotErrEmail: '请输入有效的邮箱地址',
+    shutdownConfirmTitle: '确认退出',
+    shutdownConfirmMessage: '您确定要关闭应用程序吗？',
+    shutdownConfirmDesc: '关闭应用程序会导致所有帐号离线。',
+    shutdownConfirmBtn: '确认',
   },
 
   'zh-TW': {
-    appSubtitle: '多平台會話管理系統',
+    appSubtitle: '多平台管理系統',
 
-    loginTitle: 'CS AI CRM',
-    loginSubtitle: '多平台會話管理系統',
+    logoTitle: 'LL in ONE',
+    slogan: '多平台管理系統',
     loginUsernameLabel: '帳號',
     loginUsernamePlaceholder: '輸入登入帳號',
     loginPasswordLabel: '密碼',
     loginPasswordPlaceholder: '輸入登入密碼',
     loginBtn: '登入',
+    backToLogin: '返回登入',
 
     registerTitle: '建立帳戶',
     registerSubtitle: '註冊新使用者',
@@ -335,11 +458,13 @@ const translations = {
     registerLoginLink: '返回登入',
     registerErrEmpty: '請填寫所有欄位',
     registerErrEmail: '請輸入有效的電子郵件',
-    registerErrMismatch: '兩次輸入的密碼不一致',
+    registerErrMismatch: '密碼需一致',
+    registerPasswordHint: '密碼要求：<br/>• 長度至少 8 位<br/>• 包含大小寫字母<br/>• 包含數字和特殊符號',
+    registerErrPasswordWeak: '密碼強度不足。需至少 8 位且包含大小寫字母、數字及符號。',
     registerSuccess: '帳戶建立成功',
 
     forgotTitle: '忘記密碼',
-    forgotSubtitle: '重設您的帳戶密碼',
+    forgotSubtitle: '輸入您的電子郵件以重設密碼',
     forgotOldPasswordLabel: '舊密碼',
     forgotOldPasswordPlaceholder: '輸入舊密碼',
     forgotNewPasswordLabel: '新密碼',
@@ -358,6 +483,8 @@ const translations = {
     searchPlaceholder: '搜尋帳戶...',
     searchAria: '搜尋帳戶',
     accountsListHeader: '帳戶列表',
+    logoutTitle: '登出',
+    logoutAria: '登出',
 
     selectAccount: '請選擇帳戶',
     statusReady: '就緒',
@@ -367,9 +494,9 @@ const translations = {
     zoomReset: '重置',
     zoomResetAria: '重置縮放',
 
-    welcomeTitle: '歡迎使用 CSAI-CRM',
+    welcomeTitle: '歡迎使用 ALL in ONE',
     welcomeDescription: '統一管理多個社交平台的客戶對話',
-    welcomeFeature1: '支持 WhatsApp、Instagram、Messenger、WeChat Official Account',
+    welcomeFeature1: '支持 WhatsApp、Instagram、Messenger、WeChat、Telegram 官方帳號',
     welcomeFeature2: '多帳戶並行管理',
     welcomeFeature3: '即時同步訊息',
     welcomeGetStarted: '開始使用',
@@ -390,6 +517,7 @@ const translations = {
     legalZoomTitle: '縮放法律條款內容',
 
     loading: '處理中...',
+    savingData: '正在上傳您的數據...',
 
     syncReady: '同步：待機',
     syncInProgress: '同步：進行中',
@@ -398,8 +526,8 @@ const translations = {
     syncQueued: '待同步…',
     syncSyncing: '同步中…',
 
-    renameTitle: '重新命名',
-    renameAria: '重新命名帳戶',
+    renameTitle: '編輯',
+    renameAria: '編輯帳戶',
     refreshTitle: '重新整理',
     refreshAria: '重新整理帳戶',
     deleteTitle: '刪除',
@@ -408,22 +536,53 @@ const translations = {
 
     emptyAccounts: '暫無符合的帳戶',
     switchingAccount: '切換帳戶中...',
-    renamingAccount: '重新命名中...',
-    deletingAccount: '刪除帳戶中...',
-    creatingAccount: '建立帳戶中...',
+    renamingAccount: '正在重命名並同步帳戶...',
+    deletingAccount: '正在刪除並同步帳戶...',
+    creatingAccount: '正在建立並同步帳戶...',
 
-    renameModalTitle: '重新命名帳戶',
-    renameModalDesc: '請輸入新的帳戶名稱',
+    renameModalTitle: '編輯帳戶',
+    renameModalDesc: '請輸入新的帳戶資訊',
     renameModalPlaceholder: '請輸入帳戶名稱',
     renameModalErrEmpty: '帳戶名稱不能為空',
     renameModalErrLong: '帳戶名稱不能超過 50 個字元',
 
-    createModalDesc: '請輸入手機號碼（8-15位數字）',
-    createModalPlaceholder: '請輸入手機號碼（8-15位數字）',
-    createModalErrEmpty: '手機號碼不能為空',
-    createModalErrInvalid: '請輸入有效的手機號碼（8-15位數字）',
+    createModalDesc: '輸入帳戶詳情',
+    createModalPlaceholder: '輸入識別碼',
+    createModalErrEmpty: '識別碼不能為空',
+    createModalErrInvalid: '請輸入有效的識別碼',
+    confirmTitle: '確認操作',
+
+    // New keys for improved Add Account
+    accountNameLabel: '帳戶名稱',
+    accountNamePlaceholder: '例如：我的全球辦公室',
+    instagramUsernameLabel: 'Instagram 用戶名',
+    facebookUsernameLabel: 'Facebook 用戶名',
+    optionalSuffix: '（可選）',
+    requiredSuffix: '（必填）',
+    processing: '處理中...',
+    nameRequiredErr: '帳戶名稱為必填項',
+    nameDuplicateErr: '該平台上已存在同名帳戶',
 
     deleteConfirm: '確定要刪除帳戶「{name}」嗎？此操作無法復原。',
+
+    logoutConfirmTitle: '確認登出',
+    logoutConfirmMessage: '您確定要登出嗎？',
+
+    privacyAndTermsTitle: '隱私與條款確認',
+    privacyAndTermsDescPrefix: '在使用 ALL-in-ONE 之前，請先閱讀並同意',
+    privacyAndTermsDescAnd: '和',
+    privacyAndTermsDescSuffix: '。',
+    agreePrivacy: '我已閱讀並同意隱私政策',
+    agreeTerms: '我已閱讀並同意服務條款',
+    privacyAndTermsAgree: '我接受條款',
+    privacyAndTermsView: '查看隱私政策和服務條款',
+    privacyAndTermsQuit: '退出應用',
+
+    shutdownConfirmTitle: '確認關閉',
+    shutdownConfirmMessage: '確定要關閉應用程式嗎？',
+    shutdownConfirmDesc: '關閉應用程式將導致所有帳戶離線。',
+    shutdownConfirmCancel: '取消',
+    shutdownConfirmConfirm: '確認',
 
     errInit: '初始化失敗: ',
     errBind: '事件綁定失敗: ',
@@ -445,8 +604,30 @@ const translations = {
     loginErrEmpty: '請輸入帳號與密碼',
     loginErrFailed: '登入失敗，請確認帳號密碼',
     loginErrRetry: '登入失敗，請稍後再試',
+    loggingIn: '正在登入...',
 
     langSwitcherTitle: '切換語言',
+    langEN: '英文',
+    langZHCN: '簡體中文',
+    langZHTW: '繁體中文',
+    togglePasswordTitle: '切換密碼可見性',
+    resizePanelTitle: '拖曳以調整面板大小',
+    pinAccount: '置頂',
+    unpinAccount: '取消置頂',
+    accountOptions: '選項',
+    confirmShutdown: '確認',
+    cancelShutdown: '取消',
+    registerErrFailed: '註冊失敗',
+    registerErrRetry: '註冊錯誤，請稍後再試',
+    registerErrDuplicateUsername: '此帳號已被使用，請選擇其他帳號。',
+    registerErrDuplicateEmail: '此郵箱已被註冊，請使用其他郵箱。',
+    registerErrUsernameSameAsEmail: '帳號與電子郵件不能相同。',
+    forgotWait: '請稍候，正在發送郵件...',
+    forgotErrEmail: '請輸入有效的電子郵件',
+    shutdownConfirmTitle: '確認退出',
+    shutdownConfirmMessage: '您確定要關閉應用程序嗎？',
+    shutdownConfirmDesc: '關閉應用程序會導致所有帳號離線。',
+    shutdownConfirmBtn: '確認',
   }
 };
 
@@ -462,6 +643,13 @@ let currentLang = (() => {
   } catch { }
   return DEFAULT_LANG;
 })();
+
+// Sync initial language with main process on startup
+setTimeout(() => {
+  if (window.electronAPI && window.electronAPI.setLanguage) {
+    window.electronAPI.setLanguage(currentLang);
+  }
+}, 500);
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
@@ -493,6 +681,12 @@ function setLanguage(lang) {
   if (!SUPPORTED_LANGS.includes(lang)) return;
   currentLang = lang;
   try { localStorage.setItem(I18N_STORAGE_KEY, lang); } catch { }
+  
+  // Notify main process for localized system UI (like Instagram loading mask)
+  if (window.electronAPI && window.electronAPI.setLanguage) {
+    window.electronAPI.setLanguage(lang);
+  }
+
   applyTranslations();
   updateLangSwitcherUI();
   window.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang } }));
@@ -512,6 +706,11 @@ function applyTranslations() {
     const key = el.getAttribute('data-i18n');
     if (key) el.textContent = t(key);
   });
+  // innerHTML (for keys containing HTML like bullets/br)
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if (key) el.innerHTML = t(key);
+  });
   // placeholder
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
@@ -527,6 +726,9 @@ function applyTranslations() {
     const key = el.getAttribute('data-i18n-aria');
     if (key) el.setAttribute('aria-label', t(key));
   });
+
+  // Ensure language switcher UI reflects current state
+  updateLangSwitcherUI();
 }
 
 /** Highlight the active language button in all switcher widgets (fixed DOM order). */

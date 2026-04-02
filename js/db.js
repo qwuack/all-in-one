@@ -92,11 +92,11 @@ async function initDatabase() {
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS users (
-        id bigint(20) NOT NULL,
+        id bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY,
         name varchar(255) DEFAULT NULL,
-        username varchar(100) NOT NULL,
+        username varchar(100) NOT NULL UNIQUE,
         password_hash varchar(255) NOT NULL,
-        email varchar(255) DEFAULT NULL,
+        email varchar(255) DEFAULT NULL UNIQUE,
         reset_token text DEFAULT NULL,
         reset_token_expiry bigint(20) DEFAULT NULL,
         created_at timestamp NOT NULL DEFAULT current_timestamp(),

@@ -1,0 +1,380 @@
+<!-- ══════════════════════════════════════
+       MAIN APPLICATION  —  Three-column layout
+       [68px platform rail] [230px account panel] [content]
+  ══════════════════════════════════════ -->
+<div class="app" style="display: none;">
+    <!-- ─────────────────────────────────────
+         COLUMN 1: Platform Rail (icon-only)
+    ───────────────────────────────────────── -->
+    <nav class="platform-rail">
+        <!-- Brand mark -->
+        <div class="rail-brand">
+            <div class="rail-logo">
+                <img class="logo" src="assets/images/icon.png" alt="Logo">
+            </div>
+        </div>
+
+        <!-- Platform tabs — now vertical icons -->
+        <div class="platform-tabs rail-tabs" role="tablist" data-i18n-aria="platformSelectorAria"
+            aria-label="Platform Selection">
+
+            <!-- WhatsApp -->
+            <button class="platform-tab active" data-platform="whatsapp" role="tab" aria-selected="true"
+                aria-label="WhatsApp" title="WhatsApp">
+                <svg class="platform-icon-svg" viewBox="0 0 32 32" fill="none">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M16 31C23.732 31 30 24.732 30 17C30 9.268 23.732 3 16 3C8.268 3 2 9.268 2 17C2 19.511 2.661 21.867 3.818 23.905L2 31L9.315 29.304C11.301 30.385 13.579 31 16 31ZM16 28.846C22.542 28.846 27.846 23.542 27.846 17C27.846 10.458 22.542 5.154 16 5.154C9.458 5.154 4.154 10.458 4.154 17C4.154 19.526 4.944 21.868 6.292 23.79L5.231 27.769L9.28 26.757C11.189 28.075 13.505 28.846 16 28.846Z"
+                        fill="#BFC8D0" />
+                    <path
+                        d="M28 16C28 22.627 22.627 28 16 28C13.472 28 11.127 27.218 9.193 25.884L5.091 26.909L6.166 22.878C4.801 20.931 4 18.559 4 16C4 9.373 9.373 4 16 4C22.627 4 28 9.373 28 16Z"
+                        fill="url(#wa_grad)" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2C8.268 2 2 8.268 2 16C2 18.511 2.661 20.867 3.818 22.905L2 30L9.315 28.304C11.301 29.385 13.579 30 16 30ZM16 27.846C22.542 27.846 27.846 22.542 27.846 16C27.846 9.458 22.542 4.154 16 4.154C9.458 4.154 4.154 9.458 4.154 16C4.154 18.526 4.944 20.868 6.292 22.79L5.231 26.769L9.28 25.757C11.189 27.075 13.505 27.846 16 27.846Z"
+                        fill="white" />
+                    <path
+                        d="M12.5 9.5C12.167 8.831 11.657 8.891 11.141 8.891C10.219 8.891 8.781 9.995 8.781 12.05C8.781 13.734 9.523 15.578 12.024 18.336C14.438 20.998 17.609 22.375 20.242 22.328C22.875 22.281 23.417 20.015 23.417 19.25C23.417 18.911 23.206 18.742 23.061 18.696C22.164 18.265 20.509 17.463 20.133 17.312C19.756 17.162 19.56 17.366 19.438 17.476C19.096 17.802 18.419 18.761 18.188 18.977C17.956 19.192 17.61 19.083 17.467 19.002C16.937 18.789 15.503 18.151 14.36 17.043C12.945 15.672 12.862 15.2 12.596 14.78C12.383 14.444 12.539 14.238 12.617 14.148C12.922 13.797 13.343 13.254 13.531 12.984C13.72 12.715 13.57 12.305 13.48 12.05C13.094 10.953 12.766 10.035 12.5 9.5Z"
+                        fill="white" />
+                    <defs>
+                        <linearGradient id="wa_grad" x1="26.5" y1="7" x2="4" y2="28" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#5BD066" />
+                            <stop offset="1" stop-color="#27B43E" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </button>
+
+            <!-- Instagram -->
+            <button class="platform-tab" data-platform="instagram" role="tab" aria-selected="false"
+                aria-label="Instagram" title="Instagram">
+                <svg class="platform-icon-svg" viewBox="0 0 32 32" fill="none">
+                    <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#ig_r0)" />
+                    <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#ig_r1)" />
+                    <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#ig_r2)" />
+                    <path
+                        d="M23 10.5C23 11.328 22.328 12 21.5 12C20.672 12 20 11.328 20 10.5C20 9.672 20.672 9 21.5 9C22.328 9 23 9.672 23 10.5Z"
+                        fill="white" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M16 21C18.761 21 21 18.761 21 16C21 13.239 18.761 11 16 11C13.239 11 11 13.239 11 16C11 18.761 13.239 21 16 21ZM16 19C17.657 19 19 17.657 19 16C19 14.343 17.657 13 16 13C14.343 13 13 14.343 13 16C13 17.657 14.343 19 16 19Z"
+                        fill="white" />
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M6 15.6C6 12.24 6 10.559 6.654 9.276C7.229 8.147 8.147 7.229 9.276 6.654C10.559 6 12.24 6 15.6 6H16.4C19.76 6 21.441 6 22.724 6.654C23.853 7.229 24.771 8.147 25.346 9.276C26 10.559 26 12.24 26 15.6V16.4C26 19.76 26 21.441 25.346 22.724C24.771 23.853 23.853 24.771 22.724 25.346C21.441 26 19.76 26 16.4 26H15.6C12.24 26 10.559 26 9.276 25.346C8.147 24.771 7.229 23.853 6.654 22.724C6 21.441 6 19.76 6 16.4V15.6ZM15.6 8H16.4C18.113 8 19.278 8.002 20.178 8.075C21.055 8.147 21.503 8.277 21.816 8.436C22.569 8.819 23.181 9.431 23.564 10.184C23.723 10.497 23.853 10.945 23.925 11.822C23.998 12.722 24 13.887 24 15.6V16.4C24 18.113 23.998 19.278 23.925 20.178C23.853 21.055 23.723 21.503 23.564 21.816C23.181 22.569 22.569 23.181 21.816 23.564C21.503 23.723 21.055 23.853 20.178 23.925C19.278 23.998 18.113 24 16.4 24H15.6C13.887 24 12.722 23.998 11.822 23.925C10.945 23.853 10.497 23.723 10.184 23.564C9.431 23.181 8.819 22.569 8.436 21.816C8.277 21.503 8.147 21.055 8.075 20.178C8.002 19.278 8 18.113 8 16.4V15.6C8 13.887 8.002 12.722 8.075 11.822C8.147 10.945 8.277 10.497 8.436 10.184C8.819 9.431 9.431 8.819 10.184 8.436C10.497 8.277 10.945 8.147 11.822 8.075C12.722 8.002 13.887 8 15.6 8Z"
+                        fill="white" />
+                    <defs>
+                        <radialGradient id="ig_r0" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                            gradientTransform="translate(12 23) rotate(-55.376) scale(25.52)">
+                            <stop stop-color="#B13589" />
+                            <stop offset="0.793" stop-color="#C62F94" />
+                            <stop offset="1" stop-color="#8A3AC8" />
+                        </radialGradient>
+                        <radialGradient id="ig_r1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                            gradientTransform="translate(11 31) rotate(-65.136) scale(22.594)">
+                            <stop stop-color="#E0E8B7" />
+                            <stop offset="0.445" stop-color="#FB8A2E" />
+                            <stop offset="0.715" stop-color="#E2425C" />
+                            <stop offset="1" stop-color="#E2425C" stop-opacity="0" />
+                        </radialGradient>
+                        <radialGradient id="ig_r2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                            gradientTransform="translate(0.5 3) rotate(-8.13) scale(38.891 8.318)">
+                            <stop offset="0.157" stop-color="#406ADC" />
+                            <stop offset="0.468" stop-color="#6A45BE" />
+                            <stop offset="1" stop-color="#6A45BE" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+                </svg>
+            </button>
+
+            <!-- Messenger -->
+            <button class="platform-tab" data-platform="messenger" role="tab" aria-selected="false"
+                aria-label="Facebook Messenger" title="Facebook Messenger">
+                <svg class="platform-icon-svg" viewBox="0 0 512 512">
+                    <rect width="512" height="512" rx="76" fill="#fff" />
+                    <linearGradient id="fb_g" x1="256" x2="256" y1="78" y2="441" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="#00B2FF" />
+                        <stop offset="1" stop-color="#006AFF" />
+                    </linearGradient>
+                    <path fill="url(#fb_g)"
+                        d="M256 78c-102 0-182 75-182 177 0 53 22 99 57 130a15 15 0 015 10l1 32a15 15 0 0020 13l36-16a14 14 0 0110-1 198 198 0 0053 7c102 0 182-75 182-176S358 78 256 78z" />
+                    <path fill="#fff"
+                        d="M147 306l53-85a27 27 0 0140-7l42 32a11 11 0 0013 0l57-44c8-6 18 4 13 12l-54 85a27 27 0 01-39 7l-42-32a11 11 0 00-13 0l-58 44c-7 5-17-4-12-12z" />
+                </svg>
+            </button>
+
+            <!-- WeChat -->
+            <button class="platform-tab" data-platform="wechat" role="tab" aria-selected="false" aria-label="WeChat"
+                title="WeChat Official Account">
+                <svg class="platform-icon-svg" viewBox="0 0 512 512">
+                    <rect width="512" height="512" rx="76" fill="#00c70a" />
+                    <path fill="#fff"
+                        d="M402 369c23-17 38-42 38-70 0-51-50-92-111-92s-110 41-110 92 49 92 110 92c13 0 25-2 36-5 4-1 8 0 9 1l25 14c3 2 6 0 5-4l-6-22c0-3 2-5 4-6m-110-85a15 15 0 110-29 15 15 0 010 29m74 0a15 15 0 110-29 15 15 0 010 29" />
+                    <path fill="#fff"
+                        d="m205 105c-73 0-132 50-132 111 0 33 17 63 45 83 3 2 5 5 4 10l-7 24c-1 5 3 7 6 6l30-17c3-2 7-3 11-2 26 8 48 6 51 6-24-84 59-132 123-128-10-52-65-93-131-93m-44 93a18 18 0 110-35 18 18 0 010 35m89 0a18 18 0 110-35 18 18 0 010 35" />
+                </svg>
+            </button>
+
+            <!-- Telegram -->
+            <button class="platform-tab" data-platform="telegram" role="tab" aria-selected="false" aria-label="Telegram"
+                title="Telegram">
+                <svg class="platform-icon-svg" viewBox="0 0 512 512">
+                    <rect width="512" height="512" rx="76" fill="#2ca5e0" />
+                    <path fill="#fff" d="M199 404c-11 0-10-4-13-14l-32-105 245-144" />
+                    <path fill="#fff" d="M199 404c7 0 11-4 14-7l45-43-56-34" />
+                    <path fill="#fff"
+                        d="M202 320l135 99c14 9 26 4 30-14l55-258c5-22-9-32-22-26L79 280c-21 8-21 21-4 26l49 15 114-72c5-4 10-1 6 3" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Add Account -->
+        <div class="rail-bottom">
+            <button id="add-account-btn" class="rail-add-btn" data-i18n-title="addAccountTitle"
+                data-i18n-aria="addAccountAria" title="Create New Account" aria-label="Create New Account">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Logout button -->
+        <div class="rail-bottom">
+            <button id="logout-btn" class="logout-btn" data-i18n-title="logoutTitle" data-i18n-aria="logoutAria"
+                title="Logout" aria-label="Logout">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 17L21 12L16 7" />
+                    <path d="M21 12H9" />
+                    <path d="M12 19H6C5.44772 19 5 18.5523 5 18V6C5.44772 5 5.44772 5 6 5H12" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+
+    <!-- ─────────────────────────────────────
+         COLUMN 2: Account Panel
+    ───────────────────────────────────────── -->
+    <aside class="account-panel">
+        <!-- Panel top: platform name + lang switcher -->
+        <div class="panel-topbar">
+            <div class="panel-platform-label" id="panel-platform-label">WhatsApp</div>
+            <div class="lang-switcher" id="lang-switcher" data-i18n-title="langSwitcherTitle" title="Switch Language">
+                <button class="lang-btn active" data-lang="en" aria-pressed="true" title="English"
+                    data-i18n-title="langEN">EN</button>
+                <button class="lang-btn" data-lang="zh-CN" aria-pressed="false" title="Simplified Chinese"
+                    data-i18n-title="langZHCN">简</button>
+                <button class="lang-btn" data-lang="zh-TW" aria-pressed="false" title="Traditional Chinese"
+                    data-i18n-title="langZHTW">繁</button>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-container">
+            <div class="search-box">
+                <!-- Icon pill (flex child, not absolutely positioned) -->
+                <span class="search-icon" aria-hidden="true">
+                    <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
+                        <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 12L16 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </span>
+                <input type="text" id="search-input" data-i18n-placeholder="searchPlaceholder"
+                    data-i18n-aria="searchAria" placeholder="Search accounts..." aria-label="Search accounts"
+                    autocomplete="off">
+            </div>
+        </div>
+
+
+        <!-- Account List -->
+        <div class="accounts-section">
+            <div class="accounts-header">
+                <span class="accounts-count" data-i18n="accountsListHeader">Accounts</span>
+            </div>
+            <ul id="account-list" class="account-list" role="list">
+                <!-- Dynamically populated by renderer.js -->
+            </ul>
+        </div>
+
+        <!-- Account Panel Footer: legal links -->
+        <div class="panel-footer">
+            <button id="btn-privacy" class="panel-footer-link" type="button" data-i18n="privacyBtn">Privacy
+                Policy</button>
+            <span class="panel-footer-sep">·</span>
+            <button id="btn-terms" class="panel-footer-link" type="button" data-i18n="termsBtn">Terms of
+                Service</button>
+        </div>
+    </aside>
+
+    <!-- Drag handle to resize the account panel -->
+    <div class="panel-resize-handle" id="panel-resize-handle" title="Drag to resize panel"
+        data-i18n-title="resizePanelTitle" aria-hidden="true"></div>
+
+    <!-- ─────────────────────────────────────
+         COLUMN 3: Main Content Area
+    ───────────────────────────────────────── -->
+    <main class="content">
+        <!-- Slim content header -->
+        <header class="content-header">
+            <div class="header-info">
+                <div class="header-account-row">
+                    <h2 id="current-account-name" class="account-title" data-i18n="selectAccount">Select an Account
+                    </h2>
+                    <div class="account-status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text" data-i18n="statusReady">Ready</span>
+                    </div>
+                </div>
+                <!-- Sync status line -->
+                <div id="sync-status-header" class="header-sync-status"></div>
+            </div>
+            <div class="header-actions">
+                <div id="zoom-controls" class="zoom-controls" data-i18n-title="zoomTitle"
+                    title="Zoom (Ctrl+Plus/Minus/0 to reset)">
+                    <div class="zoom-controls-container">
+                        <button type="button" class="action-btn zoom-btn" id="zoom-out-btn" data-i18n-aria="zoomOutAria"
+                            data-i18n-title="zoomOutAria" title="Zoom Out" aria-label="Zoom Out">−</button>
+                        <span class="zoom-level" id="zoom-level" aria-label="Current zoom level"
+                            title="Current Zoom">100%</span>
+                        <button type="button" class="action-btn zoom-btn" id="zoom-in-btn" data-i18n-aria="zoomInAria"
+                            data-i18n-title="zoomInAria" title="Zoom In" aria-label="Zoom In">+</button>
+                    </div>
+                    <button type="button" class="action-btn zoom-reset-btn" id="zoom-reset-btn" data-i18n="zoomReset"
+                        title="Reset Zoom" aria-label="Reset Zoom" data-i18n-title="zoomResetAria">Reset</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- BrowserView injected here by Electron -->
+        <div id="window-content" class="window-content">
+            <div class="welcome-screen">
+                <div class="welcome-content" id="welcome-content-zoom-target">
+                    <div class="welcome-content-card">
+                        <!-- Animated graphic -->
+                        <div class="welcome-icon">
+                            <!-- <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                                <defs>
+                                    <radialGradient id="wg_back" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="rgba(99,102,241,0.18)" />
+                                        <stop offset="100%" stop-color="rgba(6,182,212,0.04)" />
+                                    </radialGradient>
+                                    <linearGradient id="wg_hex" x1="0" y1="0" x2="80" y2="80"
+                                        gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#6366f1" />
+                                        <stop offset="100%" stop-color="#06b6d4" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="40" cy="40" r="40" fill="url(#wg_back)" />
+                                <circle cx="40" cy="40" r="36" stroke="rgba(99,102,241,0.15)" stroke-width="1"
+                                    fill="none" />
+                                <path d="M40 18L56 28V44L40 54L24 44V28L40 18Z" fill="url(#wg_hex)" opacity="0.18" />
+                                <path d="M40 26L52 33V47L40 54L28 47V33L40 26Z" fill="url(#wg_hex)" opacity="0.8" />
+                                <circle cx="40" cy="40" r="6" fill="white" opacity="0.95" />
+                                <circle cx="40" cy="40" r="3" fill="#6366f1" />
+                            </svg> -->
+                            <img class="logo" src="assets/images/icon.png" alt="Logo">
+                        </div>
+
+                        <h2 class="welcome-title" data-i18n="welcomeTitle">Welcome to ALL in ONE</h2>
+                        <p class="welcome-description" data-i18n="welcomeDescription">
+                            Manage customer conversations across multiple social platforms
+                        </p>
+
+                        <div class="welcome-features">
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span data-i18n="welcomeFeature1">Supports WhatsApp, Instagram, Messenger, WeChat,
+                                    Telegram</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span data-i18n="welcomeFeature2">Manage multiple accounts simultaneously</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="feature-icon">✓</span>
+                                <span data-i18n="welcomeFeature3">Real-time message sync</span>
+                            </div>
+                        </div>
+
+                        <div class="welcome-cta">
+                            <button class="btn-primary btn-get-started">
+                                <span data-i18n="welcomeGetStarted">Get Started</span>
+                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                    <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+
+<!-- ══ Phone / Rename Dialog ══ -->
+<div id="phone-dialog" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 class="modal-title" id="phone-dialog-title">Enter Phone Number</h3>
+            <button class="modal-close" id="phone-dialog-close" aria-label="Close">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description" id="phone-dialog-description" data-i18n="createModalDesc">Please enter account details</p>
+            
+            <div class="modal-input-group">
+                <label class="modal-label" for="phone-dialog-name">
+                    <span data-i18n="accountNameLabel">Account Name</span>
+                    <span class="required-mark" data-i18n="requiredSuffix">(required)</span>
+                </label>
+                <input type="text" id="phone-dialog-name" class="modal-input" data-i18n-placeholder="accountNamePlaceholder" placeholder="e.g. My Global Office" autocomplete="off" maxlength="50">
+            </div>
+
+            <div class="modal-input-group">
+                <label class="modal-label" for="phone-dialog-input">
+                    <span id="phone-dialog-input-label">Phone Number</span>
+                    <span class="optional-mark" data-i18n="optionalSuffix">(optional)</span>
+                </label>
+                <input type="tel" id="phone-dialog-input" class="modal-input" placeholder="Enter phone number (8–15 digits)" autocomplete="off" maxlength="30">
+            </div>
+
+            <div class="modal-error" id="phone-dialog-error" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="phone-dialog-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button class="btn-primary" id="phone-dialog-confirm" data-i18n="confirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Confirmation Dialog ══ -->
+<div id="confirm-dialog" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog modal-dialog-sm">
+        <div class="modal-header">
+            <h3 class="modal-title" id="confirm-dialog-title">Confirm Action</h3>
+            <button class="modal-close" id="confirm-dialog-close" aria-label="Close">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description" id="confirm-dialog-message">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="confirm-dialog-cancel" data-i18n="cancelBtn">Cancel</button>
+            <button class="btn-primary" id="confirm-dialog-confirm" data-i18n="confirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ Loading Overlay ══ -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p class="loading-text" data-i18n="loading">Processing...</p>
+    </div>
+</div>

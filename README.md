@@ -1,8 +1,8 @@
-# CS-AI-CRM 部署文档
+# ALL-IN-ONE 部署文档
  
 ## 📋 项目简介
 
-CS-AI-CRM 是一个基于 Electron 的多平台会话管理桌面应用，支持统一管理 WhatsApp、Instagram、Messenger、WeChat 等社交平台的客户对话。
+ALL-IN-ONE 是一个基于 Electron 的多平台会话管理桌面应用，支持统一管理 WhatsApp、Instagram、Messenger、WeChat 等社交平台的客户对话。
 
 ### 主要特性
 
@@ -78,9 +78,9 @@ mysql -u root -p
 
 创建数据库和用户（可选）：
 ```sql
-CREATE DATABASE crm_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'crm_user'@'localhost' IDENTIFIED BY 'your_password';
-GRANT ALL PRIVILEGES ON crm_db.* TO 'crm_user'@'localhost';
+CREATE DATABASE allinone_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'allinone_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON allinone_db.* TO 'allinone_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -95,7 +95,7 @@ EXIT;
 ```bash
 # 如果使用 Git
 git clone <repository-url>
-cd crm-demoV1.0.4
+cd all-in-one
 
 # 或直接解压项目压缩包
 ```
@@ -130,7 +130,7 @@ MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USER=root
 MYSQL_PASSWORD=your_mysql_password
-MYSQL_DATABASE=crm_db
+MYSQL_DATABASE=allinone_db
 
 ### GitHub 同步（可选：ENABLE_SYNC=true 才需要）
 ENABLE_SYNC=true
@@ -242,7 +242,7 @@ npm run clean
 
 ```sql
 -- 登录 MySQL
-mysql -u root -p crm_db
+mysql -u root -p allinone_db
 
 -- 插入用户（密码为 'admin123' 的 SHA256 哈希值）
 -- 注意：实际部署时请修改密码
@@ -277,7 +277,7 @@ VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720
 | `MYSQL_PORT` | MySQL 端口 | `3306` |
 | `MYSQL_USER` | MySQL 用户名 | `root` |
 | `MYSQL_PASSWORD` | MySQL 密码 | - |
-| `MYSQL_DATABASE` | 数据库名称 | `crm_db` |
+| `MYSQL_DATABASE` | 数据库名称 | `allinone_db` |
 
 ### GitHub 同步配置
 
@@ -367,9 +367,9 @@ VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720
 ### 查看日志
 
 应用日志会输出到控制台。如果使用构建版本，日志位置：
-- **Windows**: `%APPDATA%\crm-multi-account\logs\`
-- **macOS**: `~/Library/Application Support/crm-multi-account/logs/`
-- **Linux**: `~/.config/crm-multi-account/logs/`
+- **Windows**: `%APPDATA%\all-in-one\logs\`
+- **macOS**: `~/Library/Application Support/all-in-one/logs/`
+- **Linux**: `~/.config/all-in-one/logs/`
 
 ### 重置应用数据
 
@@ -377,17 +377,17 @@ VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720
 
 1. **Windows**:
    ```
-   %APPDATA%\crm-multi-account\
+   %APPDATA%\all-in-one\
    ```
 
 2. **macOS**:
    ```
-   ~/Library/Application Support/crm-multi-account/
+   ~/Library/Application Support/all-in-one/
    ```
 
 3. **Linux**:
    ```
-   ~/.config/crm-multi-account/
+   ~/.config/all-in-one/
    ```
 
 删除上述目录下的所有文件（保留 `config.json` 如果需要）。
@@ -398,8 +398,8 @@ VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720
 
 ```sql
 -- 警告：这将删除所有数据！
-DROP DATABASE crm_db;
-CREATE DATABASE crm_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE allinone_db;
+CREATE DATABASE allinone_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 然后重新启动应用，数据库表会自动创建。

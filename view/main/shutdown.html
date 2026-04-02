@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shutdown Confirmation</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        body {
+            background: transparent !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .popup-confirmation-screen {
+            position: relative !important;
+            background: transparent !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="shutdown-confirm-screen" class="popup-confirmation-screen">
+        <div class="popup-card">
+            <div class="popup-header">
+                <div class="logo-text">
+                    <div class="logo shutdown-logo">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <h1 class="popup-title" data-i18n="shutdownConfirmTitle">Confirm Shutdown</h1>
+                </div>
+            </div>
+            <div class="popup-content">
+                <div class="popup-message">
+                    <p data-i18n="shutdownConfirmMessage">Are you sure you want to shut down the application?</p>
+                </div>
+                <div class="desc">
+                    <p data-i18n="shutdownConfirmDesc">Shutting down the application will cause all accounts to go
+                        offline.</p>
+                </div>
+            </div>
+            <div class="popup-button-container">
+                <button id="shutdown-confirm-yes" class="btn-primary"
+                    style="background: var(--err); box-shadow: 0 4px 14px rgba(244, 86, 107, 0.4);" data-i18n="shutdownConfirmBtn">Confirm</button>
+                <button id="shutdown-confirm-cancel" class="btn-secondary" data-i18n="cancelShutdown">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/i18n.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply translations
+            if (window.i18n) {
+                const currentLang = localStorage.getItem('app_lang') || 'en';
+                window.i18n.setLanguage(currentLang);
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    el.textContent = window.i18n.t(key);
+                });
+            }
+
+            const confirmBtn = document.getElementById('shutdown-confirm-yes');
+            const cancelBtn = document.getElementById('shutdown-confirm-cancel');
+
+            confirmBtn.addEventListener('click', () => {
+                window.electronAPI.sendShutdownConfirmResponse(1);
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                window.electronAPI.sendShutdownConfirmResponse(0);
+            });
+        });
+    </script>
+</body>
+</html>
