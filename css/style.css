@@ -882,6 +882,62 @@ body {
   transform: scale(0.96);
 }
 
+/* Manual Sync Button */
+.btn-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--bd-0);
+  border-radius: var(--r-md);
+  color: var(--tx-2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-b);
+  margin-right: var(--s2);
+  letter-spacing: 0.02em;
+  font-family: var(--f-body);
+}
+
+.btn-sync:hover {
+  background: rgba(34, 211, 165, 0.08);
+  color: var(--ok);
+  /* border-color: rgba(34, 211, 165, 0.3); */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(34, 211, 165, 0.2), 0 0 0 1px rgba(34, 211, 165, 0.1);
+}
+
+.btn-sync:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-sync .sync-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-sync:hover .sync-icon {
+  transform: rotate(180deg);
+}
+
+.btn-sync.syncing .sync-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .zoom-controls {
   display: flex;
   align-items: center;

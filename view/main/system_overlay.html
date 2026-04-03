@@ -229,6 +229,15 @@
                             <input type="${f.type || 'text'}" class="modal-input" id="field-${f.id}" placeholder="${f.placeholder || ''}" value="${f.value || ''}">
                         `;
                         modalBody.appendChild(group);
+
+                        if (f.type === 'tel') {
+                            const inputEl = group.querySelector(`#field-${f.id}`);
+                            if (inputEl) {
+                                inputEl.addEventListener('input', function() {
+                                    this.value = this.value.replace(/\D/g, '');
+                                });
+                            }
+                        }
                     });
                 } else if (text) {
                     const p = document.createElement('p');

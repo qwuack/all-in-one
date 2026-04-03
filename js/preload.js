@@ -92,6 +92,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('sync-status', (event, payload) => callback(payload));
   },
 
+  manualSync: () => {
+    ipcRenderer.send('manual-sync');
+  },
+
   // 视图：对话框显示期间隐藏/恢复 BrowserView
   hideBrowserView: () => {
     ipcRenderer.send('hide-browser-view');

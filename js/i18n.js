@@ -64,6 +64,8 @@ const translations = {
     accountsListHeader: 'Account List',
     logoutTitle: 'Logout',
     logoutAria: 'Logout',
+    syncBtn: 'Sync',
+    manualSyncTitle: 'Manual Sync',
 
     // Header / main
     selectAccount: 'Select an Account',
@@ -137,7 +139,7 @@ const translations = {
 
     // Modal: Create account
     createModalDesc: 'Enter account details',
-    createModalPlaceholder: 'Enter identifiers',
+    phoneNumberPlaceholder: 'Enter phone number',
     createModalErrEmpty: 'Identifier cannot be empty',
     createModalErrInvalid: 'Please enter a valid identifier',
     confirmTitle: 'Confirm Action',
@@ -283,6 +285,8 @@ const translations = {
     accountsListHeader: '账户列表',
     logoutTitle: '登出',
     logoutAria: '登出',
+    syncBtn: '同步',
+    manualSyncTitle: '手动同步',
 
     selectAccount: '请选择账户',
     statusReady: '就绪',
@@ -345,9 +349,9 @@ const translations = {
     renameModalErrLong: '账户名称不能超过 50 个字元',
 
     createModalDesc: '输入账户详情',
-    createModalPlaceholder: '输入识别码',
-    createModalErrEmpty: '识别码不能为空',
-    createModalErrInvalid: '请输入有效的识别码',
+    phoneNumberPlaceholder: '输入手机号码',
+    createModalErrEmpty: '手机号码不能为空',
+    createModalErrInvalid: '请输入有效的手机号码',
     confirmTitle: '确认操作',
 
     // New keys for improved Add Account
@@ -485,6 +489,8 @@ const translations = {
     accountsListHeader: '帳戶列表',
     logoutTitle: '登出',
     logoutAria: '登出',
+    syncBtn: '同步',
+    manualSyncTitle: '手動同步',
 
     selectAccount: '請選擇帳戶',
     statusReady: '就緒',
@@ -547,8 +553,8 @@ const translations = {
     renameModalErrLong: '帳戶名稱不能超過 50 個字元',
 
     createModalDesc: '輸入帳戶詳情',
-    createModalPlaceholder: '輸入識別碼',
-    createModalErrEmpty: '識別碼不能為空',
+    phoneNumberPlaceholder: '輸入手機號碼',
+    createModalErrEmpty: '手機號碼不能為空',
     createModalErrInvalid: '請輸入有效的識別碼',
     confirmTitle: '確認操作',
 
@@ -681,7 +687,7 @@ function setLanguage(lang) {
   if (!SUPPORTED_LANGS.includes(lang)) return;
   currentLang = lang;
   try { localStorage.setItem(I18N_STORAGE_KEY, lang); } catch { }
-  
+
   // Notify main process for localized system UI (like Instagram loading mask)
   if (window.electronAPI && window.electronAPI.setLanguage) {
     window.electronAPI.setLanguage(lang);

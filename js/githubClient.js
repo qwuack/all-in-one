@@ -422,14 +422,16 @@ async function listDirectory(dirPath) {
   const normalizedPath = normalizePath(dirPath);
   try {
     const url = `${GITHUB_API_BASE}/repos/${config.github.owner}/${config.github.repo}/contents/${normalizedPath}`;
-    const response = await axios.get(url, {
-      headers: createHeaders(),
-      params: {
-        ref: config.github.branch
-      },
-      timeout: 10000 // 10秒超时
-    });
-    return response.data;
+    return await withRetries(async () => {
+      const response = await axios.get(url, {
+        headers: createHeaders(),
+        params: {
+          ref: config.github.branch
+        },
+        timeout: 12000 // slightly increased timeout
+      });
+      return response.data;
+    }, { retries: 3, baseDelayMs: 600 });
   } catch (error) {
     if (error.response && error.response.status === 404) {
       return []; // 目录不存在

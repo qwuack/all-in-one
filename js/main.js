@@ -66,6 +66,7 @@ let accountsChangedDuringSession = false;
 const dirtyPartitions = new Set();
 let syncDownInProgress = false;
 const syncingDownPartitions = new Set();
+let pendingSwitchPartition = null;
 let currentLanguage = store.get('all-in-one-language', 'en');
 let systemOverlayView = null;
 let tunnel;
@@ -1670,6 +1671,7 @@ function createBrowserView(partition) {
   const view = new BrowserView({
     webPreferences: {
       partition: `persist:${partition}`,
+      preload: path.join(__dirname, 'view-preload.js'),
       nodeIntegration: false,
       contextIsolation: true
     }
@@ -2300,6 +2302,22 @@ ipcMain.on('refresh-account', (event, partition) => {
   view?.webContents.reload();
 });
 
+ipcMain.on('manual-sync', async () => {
+  if (syncInProgress || syncDownInProgress) {
+    sendToRenderer('sync-status', { direction: 'down', state: 'error', message: 'Sync already in progress' });
+    return;
+  }
+  try {
+    sendToRenderer('sync-status', { direction: 'down', state: 'syncing', message: 'Manual sync started...' });
+    await syncSessionsUpForCurrentUser(new Set(dirtyPartitions));
+    await syncSessionsDownForCurrentUser();
+    sendToRenderer('sync-status', { direction: 'down', state: 'done', message: 'Manual sync completed' });
+  } catch (error) {
+    logger.error('Sync', 'Manual sync failed', error);
+    sendToRenderer('sync-status', { direction: 'down', state: 'error', message: `Manual sync failed: ${error?.message || 'unknown'}` });
+  }
+});
+
 // 内嵌页（BrowserView）缩放
 ipcMain.on('zoom-view-in', () => zoomViewIn());
 ipcMain.on('zoom-view-out', () => zoomViewOut());
@@ -2522,8 +2540,7 @@ ipcMain.handle('register', async (event, payload) => {
 // 发邮件 - 用于重置密码
 ipcMain.handle('reset-password', async (event, data) => {
   try {
-    // const email = data.forgotEmail?.trim();
-    const email = "phangyeemun@gmail.com";
+    const email = data.forgotEmail?.trim();
     if (!email) {
       return { error: true, message: "Email is required" };
     }

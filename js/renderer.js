@@ -248,6 +248,19 @@ class AccountManager {
 
     const { state, message, progress } = this.syncStatus || {};
     const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
+    
+    // Update manual sync button state
+    const manualSyncBtn = document.getElementById('manual-sync-btn');
+    if (manualSyncBtn) {
+      if (state === 'syncing') {
+        manualSyncBtn.classList.add('syncing');
+        manualSyncBtn.disabled = true;
+      } else {
+        manualSyncBtn.classList.remove('syncing');
+        manualSyncBtn.disabled = false;
+      }
+    }
+
     if (state === 'syncing') {
       const p = progress && progress.total ? ` (${progress.current}/${progress.total})` : '';
       this.syncStatusEl.textContent = `${_t('syncInProgress')}${p}${message ? ' · ' + message : ''}`;
@@ -351,9 +364,53 @@ class AccountManager {
         });
       }
 
+      const railLogo = document.querySelector('.rail-brand');
+      if (railLogo) {
+        railLogo.style.cursor = 'pointer';
+        railLogo.addEventListener('click', () => {
+          this.goHome();
+        });
+      }
+
+      const manualSyncBtn = document.getElementById('manual-sync-btn');
+      if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', () => {
+          if (window.electronAPI.manualSync) {
+            window.electronAPI.manualSync();
+          }
+        });
+      }
+
+
     } catch (error) {
       const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
       this.showError(_t('errBind') + error.message);
+    }
+  }
+
+  /**
+   * Return to the homepage (Hide BrowserView, deselect account)
+   */
+  goHome() {
+    this.currentAccount = null;
+    const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
+
+    const accountNameEl = document.getElementById('current-account-name');
+    if (accountNameEl) {
+      accountNameEl.setAttribute('data-i18n', 'selectAccount');
+      accountNameEl.textContent = _t('selectAccount');
+    }
+
+    // Clear account list highlight
+    document.querySelectorAll('.account-item').forEach(item => item.classList.remove('active'));
+
+    const welcomeScreen = document.querySelector('.welcome-screen');
+    if (welcomeScreen) {
+      welcomeScreen.style.display = 'flex';
+    }
+
+    if (window.electronAPI && window.electronAPI.hideBrowserView) {
+      window.electronAPI.hideBrowserView();
     }
   }
 
@@ -939,6 +996,15 @@ class AccountManager {
         identifierInput.maxLength = identifierMaxLength;
         identifierInput.value = initialIdentifier;
         if (identifierLabelEl) identifierLabelEl.textContent = identifierLabel;
+        if (identifierType === 'tel') {
+          const handlePhoneInput = function () {
+            this.value = this.value.replace(/\D/g, '');
+          };
+          identifierInput.removeEventListener('input', handlePhoneInput); // avoid duplicates if possible, though anonymous won't remove. Actually let's just do it directly.
+          identifierInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '');
+          });
+        }
       }
 
       error.style.display = 'none';
@@ -1020,9 +1086,9 @@ class AccountManager {
   showConfirmDialog(message, showCancel = true) {
     return new Promise((resolve) => {
       const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
-      
-      window.electronAPI.showSystemOverlay({ 
-        type: 'confirm', 
+
+      window.electronAPI.showSystemOverlay({
+        type: 'confirm',
         title: _t('confirmTitle') || 'Confirm',
         text: message,
         showCancel: showCancel
@@ -1044,7 +1110,7 @@ class AccountManager {
     const platformLower = (account.platform || 'whatsapp').toLowerCase();
 
     let identifierLabel = _t('phoneDialogPlaceholder');
-    let identifierPlaceholder = _t('createModalPlaceholder');
+    let identifierPlaceholder = _t('phoneNumberPlaceholder');
     let identifierType = 'tel';
 
     if (platformLower === 'instagram') {
@@ -1153,7 +1219,7 @@ class AccountManager {
       }
       updateBrowserViewVisibility();
     }
-    
+
     // Top-layer overlay for BrowserView coverage
     if (loading) {
       window.electronAPI.showSystemOverlay({ type: 'loading', text });
@@ -1172,7 +1238,7 @@ class AccountManager {
     const platformUpper = platformLower.toUpperCase();
 
     let identifierLabel = _t('phoneDialogPlaceholder');
-    let identifierPlaceholder = _t('createModalPlaceholder');
+    let identifierPlaceholder = _t('phoneNumberPlaceholder');
     let identifierType = 'tel';
 
     if (platformLower === 'instagram') {
@@ -1659,9 +1725,11 @@ function initLoginFlow() {
 
         if (!msg) {
           forgotErrorEl.classList.remove("show", "login-error", "login-success", "login-warning");
+          forgotErrorEl.style.display = "none";
           return;
         }
 
+        forgotErrorEl.style.display = "";
         forgotErrorEl.textContent = msg;
         forgotErrorEl.classList.add("show");
 
@@ -1675,9 +1743,34 @@ function initLoginFlow() {
         const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
         showForgotMessage(_t('forgotWait'), 'warning');
 
+        const forgotBtn = forgotForm.querySelector('button[type="submit"]');
+        const originalBtnText = _t('forgotSubmitBtn') || "Reset Password";
+        let isDone = false;
+        let cooldownTimeout = null;
+
+        if (forgotBtn) {
+          forgotBtn.disabled = true;
+          forgotBtn.textContent = "Sending...";
+
+          cooldownTimeout = setTimeout(() => {
+            if (!isDone) {
+              isDone = true;
+              forgotBtn.disabled = false;
+              forgotBtn.textContent = originalBtnText;
+            }
+          }, 60000);
+        }
+
         const result = await window.electronAPI.resetPassword({
           forgotEmail
         });
+
+        if (forgotBtn && !isDone) {
+          isDone = true;
+          clearTimeout(cooldownTimeout);
+          forgotBtn.disabled = false;
+          forgotBtn.textContent = originalBtnText;
+        }
 
         if (!result || result.error) {
           showForgotMessage(result?.message || _t('forgotErrEmail'), 'error');
@@ -1688,6 +1781,11 @@ function initLoginFlow() {
 
       } catch (err) {
         const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
+        const forgotBtn = forgotForm.querySelector('button[type="submit"]');
+        if (forgotBtn) {
+          forgotBtn.disabled = false;
+          forgotBtn.textContent = _t('forgotSubmitBtn') || "Reset Password";
+        }
         showForgotMessage(_t('forgotErrEmail'), 'error');
       }
     });
@@ -2146,10 +2244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
       const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
-      
+
       // Show confirmation dialog first
-      window.electronAPI.showSystemOverlay({ 
-        type: 'confirm', 
+      window.electronAPI.showSystemOverlay({
+        type: 'confirm',
         title: _t('logoutConfirmTitle') || 'Confirm Logout',
         text: _t('logoutConfirmMessage') || 'Are you sure you want to log out?',
         showCancel: true
@@ -2159,7 +2257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // We do NOT hide the overlay if they confirmed, because we immediately transition to 'loading' overlay.
         // But the previous implementation hid it and re-showed it. Let's hide it just to be safe.
         window.electronAPI.hideSystemOverlay();
-        
+
         if (!result || !result.confirmed) {
           return;
         }
@@ -2177,24 +2275,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           loadingOverlay.classList.add('saving-state');
           if (loadingText) loadingText.textContent = savingMsg;
         }
-        
+
         // Also show the top-layer loading overlay to cover BrowserViews
         window.electronAPI.showSystemOverlay({ type: 'loading', text: savingMsg });
 
-      // Always clear the session BEFORE the API call
-      localStorage.setItem("skipStartupTerms", "1");
-      localStorage.removeItem('csai_session_expiry');
-      localStorage.removeItem('csai_saved_username');
-      localStorage.removeItem('csai_saved_password');
+        // Always clear the session BEFORE the API call
+        localStorage.setItem("skipStartupTerms", "1");
+        localStorage.removeItem('csai_session_expiry');
+        localStorage.removeItem('csai_saved_username');
+        localStorage.removeItem('csai_saved_password');
 
-      try {
-        // Wait for main process to finish syncing and clearing session
-        await window.electronAPI.logout();
-      } catch (e) {
-        console.error('Logout sync failed:', e);
-      }
+        try {
+          // Wait for main process to finish syncing and clearing session
+          await window.electronAPI.logout();
+        } catch (e) {
+          console.error('Logout sync failed:', e);
+        }
 
-      location.reload();
+        location.reload();
       });
     });
   }
