@@ -117,6 +117,25 @@ function stopPeriodicBackgroundSync() {
   }
 }
 
+let backgroundSyncTimer = null;
+function scheduleBackgroundSync(partition = null) {
+  if (partition) dirtyPartitions.add(partition);
+  accountsChangedDuringSession = true;
+  
+  if (backgroundSyncTimer) clearTimeout(backgroundSyncTimer);
+  backgroundSyncTimer = setTimeout(() => {
+    if (!currentUser || isQuitting || syncInProgress) return;
+    try {
+      logger.info('Sync', 'Triggering scheduled background sync...');
+      syncSessionsUpForCurrentUser(new Set(dirtyPartitions)).catch(e => {
+        logger.error('Sync', 'Scheduled background sync failed', e);
+      });
+    } catch (e) {
+      logger.error('Sync', 'Scheduled background sync error', e);
+    }
+  }, 2000); // 2 seconds debounce
+}
+
 function getSyncManifestPathForUser(userId) {
   try {
     const base = app.getPath('userData');
@@ -275,6 +294,7 @@ function markAccountsChanged(reason, partition = null) {
     dirtyPartitions.add(partition);
   }
   logger.debug('Sync', `Accounts changed: ${reason || 'unknown'}${partition ? ` (partition: ${partition})` : ''}`);
+  scheduleBackgroundSync(partition);
 }
 
 // 常量配置
@@ -811,6 +831,10 @@ function adjustSystemOverlayBounds() {
 function sendToRenderer(channel, ...args) {
   if (mainWindow?.webContents) {
     mainWindow.webContents.send(channel, ...args);
+  }
+  if (channel === 'messages-updated') {
+    const partition = args[0];
+    scheduleBackgroundSync(partition);
   }
 }
 
@@ -2034,12 +2058,8 @@ async function createNewAccount(platform = 'whatsapp', identifier = '', name = '
 
     sendToRenderer('accounts-updated', accountsCache);
 
-    // Immediate sync per requirement: wait for GitHub push before proceeding
-    try {
-      await syncSessionsUpForCurrentUser(new Set([partition]));
-    } catch (e) {
-      logger.error('Account', 'Immediate sync failed after creation', e);
-    }
+    // Immediate sync per requirement: schedule in background
+    scheduleBackgroundSync(partition);
 
     switchToAccount(partition);
     return partition;
@@ -2173,11 +2193,7 @@ async function renameAccount(partition, newName, newIdentifier = '') {
     sendToRenderer('accounts-updated', accountsCache);
 
     // Immediate sync per requirement
-    try {
-      await syncSessionsUpForCurrentUser(new Set([partition]));
-    } catch (e) {
-      logger.error('Account', 'Immediate sync failed after rename', e);
-    }
+    scheduleBackgroundSync(partition);
 
     return accountsCache;
   } catch (error) {
@@ -2223,11 +2239,7 @@ async function deleteAccount(partition) {
     sendToRenderer('accounts-updated', accountsCache);
 
     // Immediate sync per requirement
-    try {
-      await syncSessionsUpForCurrentUser(new Set([partition]));
-    } catch (e) {
-      logger.error('Account', 'Immediate sync failed after deletion', e);
-    }
+    scheduleBackgroundSync(partition);
 
     return accountsCache;
   } catch (error) {
@@ -2336,7 +2348,7 @@ ipcMain.on('update-preferences', (event, prefs) => {
   if (prefs) {
     userPrefs = { ...userPrefs, ...prefs };
     // Trigger sync up after preference change to ensure cloud is current
-    accountsChangedDuringSession = true; 
+    scheduleBackgroundSync();
   }
 });
 
