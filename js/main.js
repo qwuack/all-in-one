@@ -874,60 +874,63 @@ async function syncSessionsDownForCurrentUser() {
       const localConfigContent = await fs.readFile(configPath, 'utf-8').catch(() => null);
       if (localConfigContent) {
         localConfig = JSON.parse(localConfigContent);
-        logger.debug('SyncDown', `Loaded local config.json with ${Object.keys(localConfig).length} accounts`);
       }
     } catch (e) {
-      logger.debug('SyncDown', 'Local config.json not found or invalid, will download all');
+      logger.debug('SyncDown', 'Local config.json not found or invalid');
     }
 
-    const dbAccounts = await getAccountsByUserId(currentUser.id);
-    const dbPartitions = new Set(dbAccounts.map(acc => acc.partition));
-    logger.debug('SyncDown', `Database has ${dbPartitions.size} accounts`);
-
-    const localPartitions = new Set(Object.keys(localConfig));
-    const newPartitions = [...dbPartitions].filter(p => !localPartitions.has(p));
-
-    if (newPartitions.length === 0) {
-      logger.info('SyncDown', 'No new accounts, skipping download');
-      sendToRenderer('sync-status', { direction: 'down', state: 'done', message: '会话已是最新，无需同步' });
-      return;
-    }
-
-    logger.info('SyncDown', `Found ${newPartitions.length} new accounts to download: ${newPartitions.join(', ')}`);
-    sendToRenderer('sync-status', { direction: 'down', state: 'syncing', message: `发现 ${newPartitions.length} 个账号需要同步…`, progress: { current: 0, total: newPartitions.length } });
-    // 提前把“待同步”状态发给 UI：这些账号在同步完成前应不可点击
-    for (const partition of newPartitions) {
-      sendToRenderer('sync-status', {
-        direction: 'down',
-        state: 'queued',
-        partition,
-        message: `待同步：${partition}`,
-        progress: { current: 0, total: newPartitions.length }
-      });
-    }
-
-    // 4. 下载全局 config.json（如果存在）
+    // 1. 下载并同步全局 config.json（设置与元数据）
     try {
       const remoteConfigPath = `${remoteBase}/config.json`;
       const remoteConfigContent = await ghGetFile(remoteConfigPath).catch(() => null);
       if (remoteConfigContent) {
         const remoteConfig = JSON.parse(remoteConfigContent);
-        // 合并远程配置到本地配置（保留本地已有的账号配置）
+        logger.info('SyncDown', 'Downloaded global config.json from GitHub');
+        
+        // 更新全局偏好设置
+        if (remoteConfig.__settings__) {
+          userPrefs = { ...userPrefs, ...remoteConfig.__settings__ };
+          sendToRenderer('preferences-updated', userPrefs);
+          logger.debug('SyncDown', 'Updated user preferences from GitHub');
+        }
+
+        // 合并远程配置元数据（不限于新账号，确保本地配置也是最新的）
         for (const [partition, accountConfig] of Object.entries(remoteConfig)) {
-          if (partition === '__settings__') {
-            userPrefs = { ...userPrefs, ...accountConfig };
-            sendToRenderer('preferences-updated', userPrefs);
-            continue;
-          }
-          if (newPartitions.includes(partition)) {
+          if (partition !== '__settings__') {
             localConfig[partition] = accountConfig;
           }
         }
-        logger.debug('SyncDown', 'Downloaded global config.json from GitHub');
+
+        // 立即写回本地，确保设置和元数据已保存
+        await fs.mkdir(path.dirname(configPath), { recursive: true });
+        await fs.writeFile(configPath, JSON.stringify(localConfig, null, 2), 'utf-8');
       }
     } catch (e) {
-      logger.debug('SyncDown', 'No global config.json found on GitHub, using database info');
+      logger.error('SyncDown', 'Failed to synchronize global config.json', e);
     }
+
+    // 2. 检查是否有需要同步的数据分区
+    const dbAccounts = await getAccountsByUserId(currentUser.id);
+    const dbPartitions = new Set(dbAccounts.map(acc => acc.partition));
+    
+    // 我们检查本地磁盘上的分区目录是否存在，以此决定是否需要拉取（而不是仅看 localConfig 缓存）
+    const newPartitions = [];
+    for (const partition of dbPartitions) {
+      const localPartitionPath = path.join(partitionsPath, partition);
+      const exists = await fs.access(localPartitionPath).then(() => true).catch(() => false);
+      if (!exists) {
+        newPartitions.push(partition);
+      }
+    }
+
+    if (newPartitions.length === 0) {
+      logger.info('SyncDown', 'Global settings synced. No new account partitions found.');
+      sendToRenderer('sync-status', { direction: 'down', state: 'done', message: '已同步最新设置，账号数据已齐全' });
+      return;
+    }
+
+    logger.info('SyncDown', `Found ${newPartitions.length} new account partitions to download`);
+    sendToRenderer('sync-status', { direction: 'down', state: 'syncing', message: `发现 ${newPartitions.length} 个账号需要同步…`, progress: { current: 0, total: newPartitions.length } });
 
     // 5. 对每个新增账号，从 Partitions 目录下载
 
