@@ -349,6 +349,14 @@ body {
   color: var(--tx-1);
 }
 
+.panel-platform-subtitle {
+  font-size: 10px;
+  color: #fff;
+  opacity: 0.8;
+  font-weight: 500;
+  margin-top: -1px;
+}
+
 /* ── Premium Search Bar ── */
 .search-container {
   padding: var(--s3) var(--s3) var(--s3);

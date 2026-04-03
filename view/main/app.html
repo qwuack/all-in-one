@@ -155,7 +155,10 @@
     <aside class="account-panel">
         <!-- Panel top: platform name + lang switcher -->
         <div class="panel-topbar">
-            <div class="panel-platform-label" id="panel-platform-label">WhatsApp</div>
+            <div class="panel-platform-info" style="display: flex; flex-direction: column;">
+                <div class="panel-platform-label" id="panel-platform-label">WhatsApp</div>
+                <div class="panel-platform-subtitle" id="panel-platform-subtitle" style="display: none;"></div>
+            </div>
             <div class="lang-switcher" id="lang-switcher" data-i18n-title="langSwitcherTitle" title="Switch Language">
                 <button class="lang-btn active" data-lang="en" aria-pressed="true" title="English"
                     data-i18n-title="langEN">EN</button>

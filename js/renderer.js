@@ -32,6 +32,19 @@ class AccountManager {
         this.accountStatus[acc.partition] = 'running';
       });
 
+      // Fetch cloud preferences
+      const prefs = await window.electronAPI.getPreferences();
+      if (prefs) {
+        if (prefs.pinnedAccounts) {
+          this.pinnedAccounts = new Set(prefs.pinnedAccounts);
+          // Sync back to localStorage for offline cache
+          localStorage.setItem('pinned_accounts', JSON.stringify([...this.pinnedAccounts]));
+        }
+        if (prefs.platformOrder) {
+          localStorage.setItem('csai_platform_order', JSON.stringify(prefs.platformOrder));
+        }
+      }
+
       this.renderAccounts();
       this.bindEvents();
       this.bindPlatformTabs();
@@ -42,6 +55,21 @@ class AccountManager {
       this.setupPanelResize();
       this.setupRailDrag();
       if (window.i18n) window.i18n.applyTranslations();
+      
+      // Listen for remote preference updates (from sync-down)
+      window.electronAPI.onPreferencesUpdated((newPrefs) => {
+        if (newPrefs.pinnedAccounts) {
+          this.pinnedAccounts = new Set(newPrefs.pinnedAccounts);
+          localStorage.setItem('pinned_accounts', JSON.stringify([...this.pinnedAccounts]));
+        }
+        if (newPrefs.platformOrder) {
+          localStorage.setItem('csai_platform_order', JSON.stringify(newPrefs.platformOrder));
+          // Trigger a re-render of the rail if order changed
+          this.setupRailDrag(); 
+        }
+        this.renderAccounts(document.getElementById('search-input')?.value || '');
+      });
+
       this.isInitialized = true;
     } catch (error) {
       const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
@@ -431,10 +459,34 @@ class AccountManager {
     window.addEventListener('languageChanged', () => {
       if (window.i18n) window.i18n.applyTranslations();
       this.renderSyncStatus();
+      this.updatePlatformHeader(this.currentFilterPlatform || 'whatsapp');
       // Re-render accounts to ensure all dynamic text (titles, badges, etc.) are updated
       const searchInput = document.getElementById('search-input');
       this.renderAccounts(searchInput?.value || '');
     });
+  }
+
+  /**
+   * Updates the top label and subtitle of the account panel
+   */
+  updatePlatformHeader(platform) {
+    const _t = window.i18n ? window.i18n.t.bind(window.i18n) : (k) => k;
+    const panelLabel = document.getElementById('panel-platform-label');
+    if (panelLabel) {
+      // Map platform id to i18n key like platformWechat
+      const key = `platform${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
+      panelLabel.textContent = _t(key);
+    }
+
+    const panelSubtitle = document.getElementById('panel-platform-subtitle');
+    if (panelSubtitle) {
+      if (platform === 'wechat') {
+        panelSubtitle.textContent = _t('wechatSubtitle');
+        panelSubtitle.style.display = 'block';
+      } else {
+        panelSubtitle.style.display = 'none';
+      }
+    }
   }
 
   bindPlatformTabs() {
@@ -462,11 +514,8 @@ class AccountManager {
         tab.classList.add('active');
         tab.setAttribute('aria-selected', 'true');
 
-        // Update the panel label for the new three-column layout
-        const panelLabel = document.getElementById('panel-platform-label');
-        if (panelLabel) {
-          panelLabel.textContent = platformNames[platform] || platform;
-        }
+        // Update the platform header (label & subtitle) using i18n
+        this.updatePlatformHeader(platform);
 
         const searchInput = document.getElementById('search-input');
         this.renderAccounts(searchInput?.value || '');
@@ -537,7 +586,12 @@ class AccountManager {
         }
 
         // Persist
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(getOrder()));
+        const order = getOrder();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(order));
+
+        // Sync to cloud
+        window.electronAPI.updatePreferences({ platformOrder: order });
+
         tab.classList.remove('drag-over');
       });
 
@@ -761,7 +815,12 @@ class AccountManager {
             } else {
               this.pinnedAccounts.add(account.partition);
             }
-            localStorage.setItem('pinned_accounts', JSON.stringify([...this.pinnedAccounts]));
+            const pinnedList = [...this.pinnedAccounts];
+            localStorage.setItem('pinned_accounts', JSON.stringify(pinnedList));
+            
+            // Sync to cloud
+            window.electronAPI.updatePreferences({ pinnedAccounts: pinnedList });
+
             this.renderAccounts(document.getElementById('search-input')?.value || '');
           } else if (item.action === 'rename') {
             this.renameAccount(account);

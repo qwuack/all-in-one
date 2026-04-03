@@ -66,6 +66,12 @@ const translations = {
     logoutAria: 'Logout',
     syncBtn: 'Sync',
     manualSyncTitle: 'Manual Sync',
+    wechatSubtitle: 'Official Account',
+    platformWhatsapp: 'WhatsApp',
+    platformInstagram: 'Instagram',
+    platformMessenger: 'Messenger',
+    platformWechat: 'WeChat',
+    platformTelegram: 'Telegram',
 
     // Header / main
     selectAccount: 'Select an Account',
@@ -287,6 +293,12 @@ const translations = {
     logoutAria: '登出',
     syncBtn: '同步',
     manualSyncTitle: '手动同步',
+    wechatSubtitle: '公众号',
+    platformWhatsapp: 'WhatsApp',
+    platformInstagram: 'Instagram',
+    platformMessenger: 'Messenger',
+    platformWechat: '微信',
+    platformTelegram: 'Telegram',
 
     selectAccount: '请选择账户',
     statusReady: '就绪',
@@ -491,6 +503,12 @@ const translations = {
     logoutAria: '登出',
     syncBtn: '同步',
     manualSyncTitle: '手動同步',
+    wechatSubtitle: '公眾號',
+    platformWhatsapp: 'WhatsApp',
+    platformInstagram: 'Instagram',
+    platformMessenger: 'Messenger',
+    platformWechat: '微信',
+    platformTelegram: 'Telegram',
 
     selectAccount: '請選擇帳戶',
     statusReady: '就緒',

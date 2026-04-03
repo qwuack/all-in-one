@@ -182,5 +182,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onShowSystemOverlay: (callback) => ipcRenderer.on('show-system-overlay', (event, options) => callback(options)),
   onHideSystemOverlay: (callback) => ipcRenderer.on('hide-system-overlay', () => callback()),
   sendSystemOverlayResponse: (result) => ipcRenderer.send('system-overlay-response', result),
-  onSystemOverlayResponse: (callback) => ipcRenderer.once('system-overlay-response', (event, result) => callback(result))
+  onSystemOverlayResponse: (callback) => ipcRenderer.once('system-overlay-response', (event, result) => callback(result)),
+  
+  // Preferences: Syncing pinned accounts and platform order
+  getPreferences: () => ipcRenderer.invoke('get-preferences'),
+  updatePreferences: (prefs) => ipcRenderer.send('update-preferences', prefs),
+  onPreferencesUpdated: (callback) => ipcRenderer.on('preferences-updated', (event, prefs) => callback(prefs))
 });

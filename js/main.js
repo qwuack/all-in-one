@@ -70,6 +70,7 @@ let pendingSwitchPartition = null;
 let currentLanguage = store.get('all-in-one-language', 'en');
 let systemOverlayView = null;
 let tunnel;
+let userPrefs = { pinnedAccounts: [], platformOrder: [] };
 
 /**
  * 獲取各語言對應的「載入中」文字
@@ -913,6 +914,11 @@ async function syncSessionsDownForCurrentUser() {
         const remoteConfig = JSON.parse(remoteConfigContent);
         // 合并远程配置到本地配置（保留本地已有的账号配置）
         for (const [partition, accountConfig] of Object.entries(remoteConfig)) {
+          if (partition === '__settings__') {
+            userPrefs = { ...userPrefs, ...accountConfig };
+            sendToRenderer('preferences-updated', userPrefs);
+            continue;
+          }
           if (newPartitions.includes(partition)) {
             localConfig[partition] = accountConfig;
           }
@@ -1115,7 +1121,11 @@ async function syncSessionsUpForCurrentUser(targetPartitions = null) {
           createdAt: acc.createdAt || new Date().toISOString()
         };
       }
-      const configContent = JSON.stringify(configData, null, 2);
+      const configDataWithSettings = {
+        ...configData,
+        __settings__: userPrefs
+      };
+      const configContent = JSON.stringify(configDataWithSettings, null, 2);
 
       const remoteConfigPath = `${remoteBase}/config.json`;
       logger.debug('SyncUp', `Uploading global config.json to ${remoteConfigPath}`);
@@ -2315,6 +2325,15 @@ ipcMain.on('manual-sync', async () => {
   } catch (error) {
     logger.error('Sync', 'Manual sync failed', error);
     sendToRenderer('sync-status', { direction: 'down', state: 'error', message: `Manual sync failed: ${error?.message || 'unknown'}` });
+  }
+});
+
+ipcMain.handle('get-preferences', () => userPrefs);
+ipcMain.on('update-preferences', (event, prefs) => {
+  if (prefs) {
+    userPrefs = { ...userPrefs, ...prefs };
+    // Trigger sync up after preference change to ensure cloud is current
+    accountsChangedDuringSession = true; 
   }
 });
 
